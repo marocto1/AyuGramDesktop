@@ -17,6 +17,12 @@
 #include "ui/chat/chat_style_radius.h"
 #include "utils/rc_manager.h"
 
+#if defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+#include "ayu/plugins/plugin_manager.h"
+
+#include <QCoreApplication>
+#endif
+
 #ifdef Q_OS_WIN
 #include "ayu/utils/windows_utils.h"
 #endif
@@ -60,6 +66,20 @@ void initTranslator() {
 	Ayu::Translator::TranslateManager::init();
 }
 
+void initPlugins() {
+#if defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+	const auto runtimeRoot = QCoreApplication::applicationDirPath()
+		+ QStringLiteral("/ayu_plugins/runtime");
+	const auto pluginsRoot = cWorkingDir() + QStringLiteral("tdata/plugins");
+
+	if (!Ayu::Plugins::PluginManager::instance().initialize(
+			runtimeRoot,
+			pluginsRoot)) {
+		LOG(("AyuGram Python plugin runtime initialization failed"));
+	}
+#endif
+}
+
 void initIcon() {
 #ifdef Q_OS_WIN
 	AyuAssets::loadAppIco();
@@ -75,6 +95,7 @@ void init() {
 	initWorker();
 	initRCManager();
 	initTranslator();
+	initPlugins();
 }
 
 }
