@@ -7,6 +7,7 @@
 #include <QVariantMap>
 
 #include <memory>
+#include <optional>
 
 namespace Ayu::Plugins {
 
@@ -18,6 +19,11 @@ public:
 		bool ok = false;
 		QString error;
 		QVariantMap metadata;
+	};
+
+	struct SendMessageResult {
+		bool cancelled = false;
+		QString message;
 	};
 
 	static PluginManager &instance();
@@ -32,6 +38,9 @@ public:
 	LoadResult loadPlugin(const QString &path);
 	bool unloadPlugin(const QString &pluginId, QString *error = nullptr);
 	void loadAll();
+	[[nodiscard]] std::optional<SendMessageResult> dispatchTextMessage(
+		qint64 account,
+		const QString &message) const;
 
 	[[nodiscard]] QVariant getSetting(
 		const QString &pluginId,
