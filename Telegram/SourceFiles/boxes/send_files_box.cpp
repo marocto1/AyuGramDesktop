@@ -77,6 +77,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 // AyuGram includes
 #include "ayu/ayu_settings.h"
+#if defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+#include "ayu/plugins/plugin_manager.h"
+#endif
 #include "base/unixtime.h"
 #include "ayu/utils/telegram_helpers.h"
 #include <QApplication>
@@ -2509,7 +2512,6 @@ void SendFilesBox::send(
 
 	Storage::ApplyModifications(_list);
 
-	_confirmed = true;
 	if (_confirmedCallback) {
 		auto caption = fieldText();
 		if (!validateLength(caption.text)) {
@@ -2534,6 +2536,33 @@ void SendFilesBox::send(
 				file.caption = {};
 			}
 		}
+
+#if defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+		const auto dispatchCaptionHook = [&](TextWithTags &value) {
+			const auto original = value.text;
+			const auto hook = Ayu::Plugins::PluginManager::instance().dispatchTextMessage(
+				_show->session().userId().bare,
+				original);
+			if (!hook) {
+				return true;
+			} else if (hook->cancelled) {
+				return false;
+			} else if (hook->message != original) {
+				value.text = hook->message;
+				value.tags.clear();
+			}
+			return validateLength(value.text);
+		};
+		if (!caption.text.isEmpty() && !dispatchCaptionHook(caption)) {
+			return;
+		}
+		for (auto &file : _list.files) {
+			if (!file.caption.text.isEmpty()
+				&& !dispatchCaptionHook(file.caption)) {
+				return;
+			}
+		}
+#endif
 
 		Assert(_list.filesToProcess.empty());
 
@@ -2561,6 +2590,7 @@ void SendFilesBox::send(
 
 		_confirmedCallback(std::move(bundle), options, _replyTo);
 	}
+	_confirmed = true;
 	closeBox();
 }
 
