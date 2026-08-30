@@ -9,6 +9,8 @@ on:
       - '.github/workflows/python-plugins-windows.yml'
       - 'Telegram/SourceFiles/ayu/plugins/**'
       - 'Telegram/SourceFiles/ayu/ayu_infra.cpp'
+      - 'Telegram/SourceFiles/history/view/history_view_chat_section.cpp'
+      - 'Telegram/SourceFiles/boxes/send_files_box.cpp'
       - 'Telegram/Resources/ayu_plugins/**'
       - 'Telegram/cmake/ayu_python_plugins.cmake'
       - 'Telegram/cmake/telegram_options.cmake'
