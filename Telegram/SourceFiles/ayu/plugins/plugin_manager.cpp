@@ -136,6 +136,33 @@ void PluginManager::loadAll() {
 	}
 }
 
+std::optional<PluginManager::SendMessageResult> PluginManager::dispatchTextMessage(
+		qint64 account,
+		const QString &message) const {
+	if (!_runtime) {
+		return std::nullopt;
+	}
+
+	auto error = QString();
+	const auto runtimeResult = _runtime->dispatchTextMessage(
+		account,
+		message,
+		&error);
+	if (!runtimeResult) {
+		if (!error.isEmpty()) {
+			qWarning().noquote()
+				<< "[AyuPlugins] Send message hook failed:"
+				<< error;
+		}
+		return std::nullopt;
+	}
+
+	return SendMessageResult{
+		.cancelled = runtimeResult->cancelled,
+		.message = runtimeResult->message,
+	};
+}
+
 QVariant PluginManager::getSetting(
 		const QString &pluginId,
 		const QString &key,

@@ -5,6 +5,7 @@
 #include <QVariantMap>
 
 #include <memory>
+#include <optional>
 
 namespace Ayu::Plugins {
 
@@ -18,6 +19,11 @@ public:
 		QVariantMap metadata;
 	};
 
+	struct SendMessageResult {
+		bool cancelled = false;
+		QString message;
+	};
+
 	explicit PythonRuntime(PluginManager *manager);
 	~PythonRuntime();
 
@@ -28,6 +34,10 @@ public:
 	LoadResult loadPlugin(const QString &path);
 	bool unloadPlugin(const QString &pluginId, QString *error = nullptr);
 	[[nodiscard]] QStringList loadedPluginIds(QString *error = nullptr) const;
+	[[nodiscard]] std::optional<SendMessageResult> dispatchTextMessage(
+		qint64 account,
+		const QString &message,
+		QString *error = nullptr) const;
 
 private:
 	struct Private;

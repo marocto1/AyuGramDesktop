@@ -5,12 +5,14 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import sys
+import traceback
 from dataclasses import dataclass
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
-from base_plugin import BasePlugin
+from base_plugin import BasePlugin, HookStrategy
 
 
 @dataclass
@@ -146,6 +148,56 @@ def call_hook(plugin_id: str, hook_name: str, *args: Any, **kwargs: Any) -> Any:
     if hook is None or not callable(hook):
         return None
     return hook(*args, **kwargs)
+
+
+def _message_from_params(params: Any) -> str:
+    message = getattr(params, "message", None)
+    if not isinstance(message, str):
+        raise TypeError("send message hook params.message must be a string")
+    return message
+
+
+def dispatch_send_message(account: int, message: str) -> dict[str, Any]:
+    params: Any = SimpleNamespace(message=message)
+
+    for loaded in tuple(_loaded.values()):
+        previous_params = params
+        previous_message = _message_from_params(params)
+        try:
+            result = loaded.instance.on_send_message_hook(account, params)
+            strategy = (
+                result
+                if isinstance(result, HookStrategy)
+                else getattr(result, "strategy", HookStrategy.DEFAULT)
+            )
+
+            if strategy == HookStrategy.CANCEL:
+                return {
+                    "cancelled": True,
+                    "message": _message_from_params(params),
+                }
+
+            if strategy in {HookStrategy.MODIFY, HookStrategy.MODIFY_FINAL}:
+                result_params = getattr(result, "params", None)
+                if result_params is not None:
+                    params = result_params
+                _message_from_params(params)
+
+                if strategy == HookStrategy.MODIFY_FINAL:
+                    break
+        except Exception:
+            params = previous_params
+            setattr(params, "message", previous_message)
+            print(
+                f"[AyuPlugins] send message hook failed for {loaded.plugin_id}",
+                file=sys.stderr,
+            )
+            traceback.print_exc()
+
+    return {
+        "cancelled": False,
+        "message": _message_from_params(params),
+    }
 
 
 def create_settings(plugin_id: str) -> list[Any]:

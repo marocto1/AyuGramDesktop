@@ -377,4 +377,92 @@ QStringList PythonRuntime::loadedPluginIds(QString *error) const {
 #endif
 }
 
+std::optional<PythonRuntime::SendMessageResult> PythonRuntime::dispatchTextMessage(
+		qint64 account,
+		const QString &message,
+		QString *error) const {
+#if !defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+	if (error) {
+		*error = QStringLiteral("Python plugin support is disabled");
+	}
+	return std::nullopt;
+#else
+	if (!_private->initialized || !_private->loaderModule) {
+		if (error) {
+			*error = QStringLiteral("Python runtime is not initialized");
+		}
+		return std::nullopt;
+	}
+
+	auto *pyAccount = PyLong_FromLongLong(static_cast<long long>(account));
+	const auto utf8 = message.toUtf8();
+	auto *pyMessage = PyUnicode_FromStringAndSize(utf8.constData(), utf8.size());
+	if (!pyAccount || !pyMessage) {
+		Py_XDECREF(pyAccount);
+		Py_XDECREF(pyMessage);
+		if (error) {
+			*error = PythonError();
+		}
+		return std::nullopt;
+	}
+
+	auto *args = PyTuple_Pack(2, pyAccount, pyMessage);
+	Py_DECREF(pyAccount);
+	Py_DECREF(pyMessage);
+	if (!args) {
+		if (error) {
+			*error = PythonError();
+		}
+		return std::nullopt;
+	}
+
+	auto *dispatched = CallLoader(
+		_private->loaderModule,
+		"dispatch_send_message",
+		args);
+	Py_DECREF(args);
+	if (!dispatched) {
+		if (error) {
+			*error = PythonError();
+		}
+		return std::nullopt;
+	}
+	if (!PyDict_Check(dispatched)) {
+		Py_DECREF(dispatched);
+		if (error) {
+			*error = QStringLiteral(
+				"loader.dispatch_send_message() returned a non-dict value");
+		}
+		return std::nullopt;
+	}
+
+	auto *cancelled = PyDict_GetItemString(dispatched, "cancelled");
+	auto *text = PyDict_GetItemString(dispatched, "message");
+	if (!cancelled || !text || !PyUnicode_Check(text)) {
+		Py_DECREF(dispatched);
+		if (error) {
+			*error = QStringLiteral(
+				"loader.dispatch_send_message() returned invalid data");
+		}
+		return std::nullopt;
+	}
+
+	const auto cancelledValue = PyObject_IsTrue(cancelled);
+	if (cancelledValue < 0) {
+		if (error) {
+			*error = PythonError();
+		}
+		Py_DECREF(dispatched);
+		return std::nullopt;
+	}
+
+	auto result = SendMessageResult{
+		.cancelled = (cancelledValue != 0),
+		.message = PyString(text),
+	};
+	Py_DECREF(dispatched);
+	return result;
+#endif
+}
+
 } // namespace Ayu::Plugins
