@@ -95,7 +95,7 @@ jobs:
         run: |
           call "%VCVARS%" -vcvars_ver=14.44
           if errorlevel 1 exit /b 1
-          "%PY310%" tdesktop\Telegram\build\prepare\prepare.py silent
+          "%PY310%" tdesktop\Telegram\build\prepare\prepare.py skip-release silent
 
       - name: Configure AyuGram with Python plugins
         shell: cmd
