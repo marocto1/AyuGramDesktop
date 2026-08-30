@@ -1,0 +1,141 @@
+name: Apply media caption hook patch
+
+on:
+  push:
+    branches:
+      - python-plugins
+    paths:
+      - .github/workflows/apply-media-caption-hook.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: python-plugins
+          fetch-depth: 0
+
+      - name: Patch media caption hooks
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("Telegram/SourceFiles/boxes/send_files_box.cpp")
+          text = path.read_text(encoding="utf-8")
+
+          old_include = '''// AyuGram includes
+          #include "ayu/ayu_settings.h"
+          #include "base/unixtime.h"
+          #include "ayu/utils/telegram_helpers.h"
+          '''
+          new_include = '''// AyuGram includes
+          #include "ayu/ayu_settings.h"
+          #if defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+          #include "ayu/plugins/plugin_manager.h"
+          #endif
+          #include "base/unixtime.h"
+          #include "ayu/utils/telegram_helpers.h"
+          '''
+          if old_include not in text:
+              raise SystemExit("AyuGram include anchor not found")
+          text = text.replace(old_include, new_include, 1)
+
+          old_confirmed = '''\tStorage::ApplyModifications(_list);
+
+          \t_confirmed = true;
+          \tif (_confirmedCallback) {
+          '''
+          new_confirmed = '''\tStorage::ApplyModifications(_list);
+
+          \tif (_confirmedCallback) {
+          '''
+          if old_confirmed not in text:
+              raise SystemExit("confirmed anchor not found")
+          text = text.replace(old_confirmed, new_confirmed, 1)
+
+          old_before_groups = '''\t\tfor (auto &file : _list.files) {
+          \t\t\tif (SkipCaption(file, way)) {
+          \t\t\t\tfile.caption = {};
+          \t\t\t}
+          \t\t}
+
+          \t\tAssert(_list.filesToProcess.empty());
+          '''
+          new_before_groups = '''\t\tfor (auto &file : _list.files) {
+          \t\t\tif (SkipCaption(file, way)) {
+          \t\t\t\tfile.caption = {};
+          \t\t\t}
+          \t\t}
+
+          #if defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+          \t\tconst auto dispatchCaptionHook = [&](TextWithTags &value) {
+          \t\t\tconst auto original = value.text;
+          \t\t\tconst auto hook = Ayu::Plugins::PluginManager::instance().dispatchTextMessage(
+          \t\t\t\t_show->session().userId().bare,
+          \t\t\t\toriginal);
+          \t\t\tif (!hook) {
+          \t\t\t\treturn true;
+          \t\t\t} else if (hook->cancelled) {
+          \t\t\t\treturn false;
+          \t\t\t} else if (hook->message != original) {
+          \t\t\t\tvalue.text = hook->message;
+          \t\t\t\tvalue.tags.clear();
+          \t\t\t}
+          \t\t\treturn validateLength(value.text);
+          \t\t};
+          \t\tif (!caption.text.isEmpty() && !dispatchCaptionHook(caption)) {
+          \t\t\treturn;
+          \t\t}
+          \t\tfor (auto &file : _list.files) {
+          \t\t\tif (!file.caption.text.isEmpty()
+          \t\t\t\t&& !dispatchCaptionHook(file.caption)) {
+          \t\t\t\treturn;
+          \t\t\t}
+          \t\t}
+          #endif
+
+          \t\tAssert(_list.filesToProcess.empty());
+          '''
+          if old_before_groups not in text:
+              raise SystemExit("caption/group anchor not found")
+          text = text.replace(old_before_groups, new_before_groups, 1)
+
+          old_close = '''\t\t_confirmedCallback(std::move(bundle), options, _replyTo);
+          \t}
+          \tcloseBox();
+          }
+          '''
+          new_close = '''\t\t_confirmedCallback(std::move(bundle), options, _replyTo);
+          \t}
+          \t_confirmed = true;
+          \tcloseBox();
+          }
+          '''
+          if old_close not in text:
+              raise SystemExit("close anchor not found")
+          text = text.replace(old_close, new_close, 1)
+
+          path.write_text(text, encoding="utf-8")
+
+      - name: Verify patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          grep -q 'dispatchCaptionHook' Telegram/SourceFiles/boxes/send_files_box.cpp
+          grep -q 'ayu/plugins/plugin_manager.h' Telegram/SourceFiles/boxes/send_files_box.cpp
+
+      - name: Commit patch and remove helper workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/apply-media-caption-hook.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Telegram/SourceFiles/boxes/send_files_box.cpp .github/workflows/apply-media-caption-hook.yml
+          git commit -m "plugins: hook outgoing media captions"
+          git push origin HEAD:python-plugins
