@@ -105,6 +105,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 // AyuGram includes
 #include "ayu/ayu_settings.h"
 #include "ayu/features/message_shot/message_shot.h"
+#if defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+#include "ayu/plugins/plugin_manager.h"
+#endif
 #include "base/unixtime.h"
 
 
@@ -1675,6 +1678,21 @@ void ChatWidget::sendTextWithTags(
 			return;
 		}
 	}
+
+#if defined(AYUGRAM_ENABLE_PYTHON_PLUGINS)
+	const auto originalText = message.textWithTags.text;
+	if (const auto hook = Ayu::Plugins::PluginManager::instance().dispatchTextMessage(
+			session().userId().bare,
+			originalText)) {
+		if (hook->cancelled) {
+			return;
+		}
+		if (hook->message != originalText) {
+			message.textWithTags.text = hook->message;
+			message.textWithTags.tags.clear();
+		}
+	}
+#endif
 
 	const auto nextLocalMessageId = session().data().nextLocalMessageId();
 	const auto hasText = !message.textWithTags.text.trimmed().isEmpty();
