@@ -16,6 +16,7 @@ class PluginManager final : public QObject {
 public:
 	static PluginManager &Instance();
 	void start();
+	void restart();
 	void request(QJsonObject command, Fn<void(QJsonObject)> done = nullptr);
 	[[nodiscard]] QJsonObject snapshot() const;
 	[[nodiscard]] QString error() const;

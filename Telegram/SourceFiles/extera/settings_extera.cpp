@@ -169,8 +169,7 @@ ExteraPlugins::ExteraPlugins(
 	const auto restart = content->add(object_ptr<Ui::SettingsButton>(
 		content, tr::lng_extera_refresh(), st::settingsButton));
 	restart->addClickHandler([=] {
-		Extera::PluginManager::Instance().start();
-		command({ { u"op"_q, u"list"_q } });
+		Extera::PluginManager::Instance().restart();
 	});
 	_search = content->add(object_ptr<Ui::InputField>(
 		content, st::settingsAddReplyField, tr::lng_extera_search()),
@@ -202,7 +201,7 @@ void ExteraPlugins::command(QJsonObject request, Fn<void(QJsonObject)> done) {
 
 void ExteraPlugins::importPlugin() {
 	FileDialog::GetOpenPath(this, tr::lng_extera_import(tr::now),
-		u"Python plugins (*.plugin)"_q,
+		u"Python plugins (*.plugin *.py)"_q,
 		crl::guard(this, [=](const FileDialog::OpenResult &result) {
 			if (!result.paths.empty()) {
 				command({ { u"op"_q, u"install"_q }, { u"path"_q, result.paths.front() } });
@@ -303,7 +302,9 @@ void ExteraPlugins::showSettings(QJsonObject plugin) {
 		[=](QJsonObject result) {
 			_controller->show(Box([=](not_null<Ui::GenericBox*> box) {
 				box->setTitle(rpl::single(name));
+				auto rowIndex = 0;
 				for (const auto &value : result.value(u"settings"_q).toArray()) {
+					const auto index = rowIndex++;
 					const auto row = value.toObject();
 					const auto type = row.value(u"type"_q).toString();
 					const auto text = row.value(u"text"_q).toString();
@@ -312,12 +313,14 @@ void ExteraPlugins::showSettings(QJsonObject plugin) {
 						command({ { u"op"_q, u"set_setting"_q }, { u"plugin"_q, id },
 							{ u"key"_q, key }, { u"value"_q, value } });
 					});
-					if (type == u"Input"_q) {
+					if (type == u"Input"_q || type == u"EditText"_q) {
 						box->addRow(object_ptr<Ui::FlatLabel>(box, text, st::boxLabel));
 						const auto field = box->addRow(object_ptr<Ui::InputField>(
 							box, st::settingsAddReplyField, rpl::single(text),
 							row.value(u"value"_q).toString()));
-						field->setMaxLength(4096);
+						field->setMaxLength(type == u"EditText"_q
+							? row.value(u"max_length"_q).toInt(4096)
+							: 4096);
 						const auto apply = box->addRow(object_ptr<Ui::SettingsButton>(
 							box, tr::lng_settings_save(), st::settingsButton));
 						apply->addClickHandler([=] { save(field->getLastText()); });
@@ -350,6 +353,13 @@ void ExteraPlugins::showSettings(QJsonObject plugin) {
 								});
 							}));
 						}));
+					} else if (type == u"Text"_q && row.value(u"clickable"_q).toBool()) {
+						const auto action = box->addRow(object_ptr<Ui::SettingsButton>(
+							box, rpl::single(text), st::settingsButton));
+						action->addClickHandler([=] {
+							command({ { u"op"_q, u"click_setting"_q }, { u"plugin"_q, id },
+								{ u"index"_q, index } });
+						});
 					} else {
 						box->addRow(object_ptr<Ui::FlatLabel>(box, text, st::boxLabel));
 					}

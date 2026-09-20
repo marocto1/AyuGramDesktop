@@ -1,10 +1,10 @@
-# ExteraGram Desktop plugins — API 1 (experimental)
+# ExteraGram Desktop plugins — API 2 (experimental)
 
 This is an independent desktop extension of [AyuGram Desktop](https://github.com/AyuGram/AyuGramDesktop), not an official exteraGram release. Existing AyuGram features and attribution are retained.
 
 ## Использование
 
-1. Распакуйте **весь** архив Actions, включая `python`, `extera_runtime` и `plugin_examples`, и запустите `AyuGram.exe`.
+1. Распакуйте **весь** архив Actions, включая `python`, `extera_runtime` и `plugin_examples`, и запустите `ExteraGram.exe`.
 2. Откройте **Настройки → ExteraGram → Plugins**.
 3. Включите систему плагинов, прочитав предупреждение.
 4. Импортируйте `plugin_examples/feel_rich_desktop.plugin`. Импорт читает метаданные через AST, не выполняя код. Новый плагин всегда выключен.
@@ -22,13 +22,13 @@ This is an independent desktop extension of [AyuGram Desktop](https://github.com
 Поддерживаются:
 
 - `__id__`, `__name__`, `__description__`, `__author__`, `__version__`, `__icon__` (метаданные; Android sticker icons не загружаются).
-- Обязательная декларация `__platform__ = "desktop"`, `__desktop_api__ = 1`.
+- Поддерживаются как Desktop-маркеры `__platform__` / `__desktop_api__`, так и официальный стиль exteraGram без них. Метаданные `__app_version__`, `__sdk_version__`, `__min_version__` и `__requirements__` распознаются.
 - `on_plugin_load`, `on_plugin_unload`, `create_settings`.
 - `get_setting`, `set_setting`, `export_settings`, `import_settings`, `log`.
 - `ui.settings.Header`, `Divider`, `Input`, `Switch`, `Selector`; callbacks `on_change`.
 - Desktop-only `set_balance_preview(amount, currency="stars")` и `clear_balance_preview(currency="stars")`; валюта `stars` или `ton`, от 0 до 10¹⁰, максимум 9 десятичных знаков.
 
-Пока отсутствуют Java/Xposed hooks, Telegram request/update hooks, отправка сообщений, Android UI, PIP, Elyx-пакеты, custom views и фоновые callback-события. Эффекты синхронизируются при ответах на команды хоста, не из фоновых потоков. Сторонние зависимости не устанавливаются автоматически. Если несколько плагинов задают одну валюту, побеждает последний установленный активный плагин; закрепление не меняет этот порядок. Настройки и preview общие для локальной установки, не раздельные по Telegram-аккаунтам.
+API 2 добавляет совместимые `AppEvent`, `HookResult`, `HookStrategy`, `MenuItemData`, `MenuItemType`, `Text`, `EditText`, базовые `android_utils`, `client_utils`, `file_utils` и `hook_utils`. Java/Xposed hooks, Telegram request/update hooks, отправка сообщений, PIP/Elyx и Android custom views пока требуют отдельного нативного моста. Эффекты синхронизируются при ответах на команды хоста, не из фоновых потоков. Сторонние зависимости не устанавливаются автоматически. Если несколько плагинов задают одну валюту, побеждает последний установленный активный плагин; закрепление не меняет этот порядок. Настройки и preview общие для локальной установки, не раздельные по Telegram-аккаунтам.
 
 ## Минимальный плагин
 

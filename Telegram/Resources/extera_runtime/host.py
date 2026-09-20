@@ -64,12 +64,18 @@ def inspect_source(source):
     )})
     reason = ""
     if android:
-        reason = "Android/Java APIs require a Desktop port: " + ", ".join(android)
-    elif metadata.get("platform") != "desktop" or metadata.get("desktop_api") != 1:
-        reason = 'Desktop plugins require __platform__ = "desktop" and __desktop_api__ = 1'
-    elif metadata.get("requirements"):
-        reason = "Third-party package installation is not supported by Desktop API 1"
+        reason = "Android/Java runtime APIs are not available on Windows: " + ", ".join(android)
+    requirements = metadata.get("requirements", [])
+    if requirements is None:
+        requirements = []
+    if not isinstance(requirements, (list, tuple)) or not all(isinstance(x, str) for x in requirements):
+        raise ValueError("__requirements__ must be a list of strings")
+    metadata["requirements"] = list(requirements)
+    if "app_version" not in metadata and isinstance(metadata.get("min_version"), (str, int, float)):
+        metadata["app_version"] = ">=" + str(metadata["min_version"])
     metadata.update(compatible=not reason, reason=reason,
+                    desktop_native=(metadata.get("platform") == "desktop" and metadata.get("desktop_api") in (1, 2)),
+                    sdk_version_runtime=SDK_VERSION,
                     sha256=hashlib.sha256(source).hexdigest())
     return metadata
 
@@ -84,6 +90,10 @@ class Host:
         self.directory.mkdir(exist_ok=True)
         self.state_path = self.root / "state.json"
         self.marker = self.root / "running"
+        self.packages = self.root / "packages"
+        self.packages.mkdir(exist_ok=True)
+        if str(self.packages) not in sys.path:
+            sys.path.insert(0, str(self.packages))
         self.state = {"engine": False, "plugins": {}}
         self.active = {}
         self.modules = {}
@@ -210,7 +220,13 @@ class Host:
             plugins.append(meta)
         plugins.sort(key=lambda meta: (not meta["pinned"], meta["name"].casefold()))
         return dict(engine=self.state["engine"], plugins=plugins, previews=previews,
-                    warning=self.warning, api=1)
+                    warning=self.warning, api=2, sdk_version=SDK_VERSION,
+                    capabilities={
+                        "metadata": True, "lifecycle": True, "app_events": True,
+                        "settings": ["Header", "Divider", "Switch", "Selector", "Input", "Text", "EditText"],
+                        "python_requirements": False, "telegram_hooks": False,
+                        "java_xposed": False, "custom_android_views": False,
+                    })
 
     def setting_rows(self, plugin_id):
         if plugin_id not in self.active:
@@ -232,11 +248,18 @@ class Host:
         result = []
         plugin = self.active.get(plugin_id)
         for row in self.setting_rows(plugin_id):
-            item = {"type": type(row).__name__, "text": str(row.text)}
+            item = {"type": type(row).__name__}
+            item["text"] = str(getattr(row, "text", getattr(row, "hint", "")))
             if hasattr(row, "key"):
                 item.update(key=row.key, value=plugin.get_setting(row.key, row.default))
             if isinstance(row, Selector):
                 item["items"] = row.items or []
+            if isinstance(row, EditText):
+                item.update(hint=row.hint, multiline=bool(row.multiline), max_length=int(row.max_length))
+            if isinstance(row, Text):
+                item.update(accent=bool(row.accent), red=bool(row.red), clickable=bool(row.on_click or row.create_sub_fragment))
+            if isinstance(row, Custom):
+                item.update(text="Custom Android setting is unavailable on Desktop", unsupported=True)
             if hasattr(row, "subtext"):
                 item["subtext"] = row.subtext
             result.append(item)
@@ -247,8 +270,10 @@ class Host:
         row = next((row for row in rows if getattr(row, "key", None) == key), None)
         if row is None:
             raise ValueError("Unknown setting")
-        if isinstance(row, Input) and (not isinstance(value, str) or len(value) > 4096):
-            raise ValueError("Expected text of at most 4096 characters")
+        if isinstance(row, (Input, EditText)):
+            limit = row.max_length if isinstance(row, EditText) else 4096
+            if not isinstance(value, str) or len(value) > limit:
+                raise ValueError(f"Expected text of at most {limit} characters")
         if isinstance(row, Switch) and type(value) is not bool:
             raise ValueError("Expected a boolean")
         if isinstance(row, Selector) and (type(value) is not int or not 0 <= value < len(row.items or [])):
@@ -326,6 +351,31 @@ class Host:
             elif op == "set_setting":
                 self.set_setting(plugin_id, request["key"], request["value"])
                 result["settings"] = self.settings(plugin_id)
+        elif op == "app_event":
+            value = str(request.get("value", "")).lower()
+            try:
+                event = AppEvent(value)
+            except ValueError as error:
+                raise ValueError("Unknown app event") from error
+            for plugin_id, plugin in list(self.active.items()):
+                try:
+                    plugin.on_app_event(event)
+                except Exception as error:
+                    self.state["plugins"][plugin_id]["error"] = str(error)[:2000]
+        elif op == "click_setting":
+            self.path(plugin_id)
+            if plugin_id not in self.active:
+                raise ValueError("Plugin is not active")
+            index = request.get("index")
+            rows = self.setting_rows(plugin_id)
+            if type(index) is not int or not 0 <= index < len(rows):
+                raise ValueError("Invalid setting row")
+            row = rows[index]
+            callback = getattr(row, "on_click", None)
+            if callback:
+                callback(None)
+            elif getattr(row, "create_sub_fragment", None):
+                raise ValueError("Nested settings pages are not implemented on Desktop yet")
         elif op == "shutdown":
             self.close()
         elif op != "list":
@@ -337,6 +387,11 @@ class Host:
     def close(self):
         if self.closed:
             return
+        for plugin_id, plugin in list(self.active.items()):
+            try:
+                plugin.on_app_event(AppEvent.STOP)
+            except Exception as error:
+                self.state["plugins"][plugin_id]["error"] = str(error)[:2000]
         for plugin_id in list(self.active):
             self.unload(plugin_id)
         self.save()

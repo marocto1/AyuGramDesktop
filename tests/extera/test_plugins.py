@@ -56,9 +56,10 @@ class PluginTests(unittest.TestCase):
         self.assertFalse(meta["compatible"])
         self.assertIn("java.lang", meta["reason"])
 
-    def test_requires_explicit_desktop_api(self):
-        meta = inspect_source(b'__id__="legacy"\n__name__="Legacy"')
-        self.assertFalse(meta["compatible"])
+    def test_official_metadata_does_not_require_desktop_marker(self):
+        meta = inspect_source(b'__id__="legacy"\n__name__="Legacy"\n__sdk_version__=">=1.4.4.3"')
+        self.assertTrue(meta["compatible"])
+        self.assertEqual(meta["sdk_version"], ">=1.4.4.3")
 
     def test_path_traversal_id_rejected(self):
         for plugin_id in ("../outside", "x/y", "x\\y", "x", "0x", "x" * 33):

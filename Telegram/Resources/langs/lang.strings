@@ -9035,7 +9035,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "ayu_UpdateAyuGram" = "Update AyuGram";
 "ayu_UtilityRestartRequired" = "The app will close in 5 seconds.";
 "lng_extera_title" = "ExteraGram";
-"lng_extera_about" = "Based on AyuGram Desktop. Independent Desktop plugin API; Android/Java plugins need a port.";
+"lng_extera_about" = "Based on AyuGram Desktop. Desktop Plugin SDK 2 supports official exteraGram-style metadata, lifecycle and common settings; Java/Xposed-only plugins still require a native Desktop port.";
 "lng_extera_plugins" = "Plugins";
 "lng_extera_settings" = "Settings";
 "lng_extera_engine" = "Enable plugin system";

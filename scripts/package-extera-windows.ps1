@@ -3,7 +3,7 @@ $repo = Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $repo
 $destination = Join-Path $repo 'dist/ExteraGramDesktop'
 New-Item -ItemType Directory -Force $destination | Out-Null
-Copy-Item -LiteralPath out/Debug/AyuGram.exe -Destination $destination
+Copy-Item -LiteralPath out/Debug/AyuGram.exe -Destination (Join-Path $destination 'ExteraGram.exe')
 foreach ($folder in @('extera_runtime', 'plugin_examples')) {
     Copy-Item -LiteralPath "out/Debug/$folder" -Destination $destination -Recurse -Force
 }

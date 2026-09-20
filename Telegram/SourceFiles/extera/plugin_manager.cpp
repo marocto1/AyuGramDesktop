@@ -29,7 +29,15 @@ PluginManager::PluginManager(QObject *parent) : QObject(parent) {
 	QObject::connect(&_process, &QProcess::readyReadStandardOutput,
 		this, [=] { receive(); });
 	QObject::connect(&_process, &QProcess::readyReadStandardError, this, [=] {
-		_process.readAllStandardError();
+		const auto data = _process.readAllStandardError();
+		if (data.isEmpty()) {
+			return;
+		}
+		QDir().mkpath(directory());
+		QFile file(QDir(directory()).absoluteFilePath(u"plugin-host.log"_q));
+		if (file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+			file.write(data);
+		}
 	});
 	QObject::connect(&_process, &QProcess::errorOccurred,
 		this, [=](QProcess::ProcessError) {
@@ -65,14 +73,16 @@ void PluginManager::start() {
 	if (!QFileInfo(python).isAbsolute()
 		|| !QFileInfo::exists(python)
 		|| !QFileInfo::exists(script)) {
-		_error = u"Plugin runtime is missing. Keep the python and extera_runtime folders next to the app, or set EXTERAGRAM_PYTHON to an absolute Python 3.11+ path."_q;
+		_ready = false;
+		_error = u"Plugin runtime is missing. Run ExteraGram from the full portable folder with python/ and extera_runtime/ next to ExteraGram.exe, or set EXTERAGRAM_PYTHON to an absolute Python 3.11+ path."_q;
 		_changes.fire({});
 		return;
 	}
+	QDir().mkpath(directory());
 	_error.clear();
 	_buffer.clear();
 	_stopping = false;
-	_ready = true;
+	_ready = false;
 	_process.setWorkingDirectory(app + u"/extera_runtime"_q);
 	_process.start(python, {
 		u"-u"_q,
@@ -83,10 +93,23 @@ void PluginManager::start() {
 		u"--root"_q,
 		directory(),
 	});
-	request({ { u"op"_q, u"list"_q } });
+	if (!_process.waitForStarted(5000)) {
+		fail(u"Could not start the Python plugin host: %1"_q.arg(_process.errorString()));
+		return;
+	}
+	_ready = true;
+	request({ { u"op"_q, u"list"_q } }, [=](QJsonObject result) {
+		if (result.value(u"ok"_q).toBool()) {
+			request({ { u"op"_q, u"app_event"_q }, { u"value"_q, u"start"_q } });
+		}
+	});
 }
 
-void PluginManager::request(QJsonObject command, Fn<void(QJsonObject)> done) {
+void PluginManager::restart() {
+	shutdown();
+	_stopping = false;
+	start();
+}\n\nvoid PluginManager::request(QJsonObject command, Fn<void(QJsonObject)> done) {
 	if (!_ready || _pending.size() >= 32) {
 		if (done) {
 			done({ { u"ok"_q, false }, { u"error"_q,
