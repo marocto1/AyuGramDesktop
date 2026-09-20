@@ -17,6 +17,8 @@ public:
 	static PluginManager &Instance();
 	void start();
 	void restart();
+	void inspectPluginFile(QString path, Fn<void(QJsonObject)> done);
+	void installPluginFile(QString path, Fn<void(QJsonObject)> done);
 	void request(QJsonObject command, Fn<void(QJsonObject)> done = nullptr);
 	[[nodiscard]] QJsonObject snapshot() const;
 	[[nodiscard]] QString error() const;

@@ -113,6 +113,26 @@ void PluginManager::restart() {
 	start();
 }
 
+void PluginManager::inspectPluginFile(
+		QString path,
+		Fn<void(QJsonObject)> done) {
+	start();
+	request({
+		{ u"op"_q, u"inspect"_q },
+		{ u"path"_q, std::move(path) },
+	}, std::move(done));
+}
+
+void PluginManager::installPluginFile(
+		QString path,
+		Fn<void(QJsonObject)> done) {
+	start();
+	request({
+		{ u"op"_q, u"install"_q },
+		{ u"path"_q, std::move(path) },
+	}, std::move(done));
+}
+
 void PluginManager::request(QJsonObject command, Fn<void(QJsonObject)> done) {
 	if (!_ready || _pending.size() >= 32) {
 		if (done) {

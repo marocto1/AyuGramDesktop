@@ -79,6 +79,17 @@ class PluginTests(unittest.TestCase):
         self.assertTrue(result["snapshot"]["native"]["unlimited_pins"])
         self.assertTrue(result["snapshot"]["plugins"][0]["active"])
 
+    def test_inspect_does_not_install(self):
+        path = self.make_plugin(
+            '__id__="inspectable"\n'
+            '__name__="Inspectable"\n'
+            '__author__="Tester"\n'
+        )
+        result = self.host.dispatch(dict(op="inspect", path=str(path)))
+        self.assertEqual(result["plugin"]["name"], "Inspectable")
+        self.assertFalse((self.root / "plugins" / "inspectable.plugin").exists())
+        self.assertEqual(result["snapshot"]["plugins"], [])
+
     def test_path_traversal_id_rejected(self):
         for plugin_id in ("../outside", "x/y", "x\\y", "x", "0x", "x" * 33):
             with self.subTest(plugin_id=plugin_id), self.assertRaises(ValueError):

@@ -56,6 +56,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_document.h"
 #include "data/data_document_media.h"
 #include "data/data_file_click_handler.h"
+#include "extera/plugin_manager.h"
 #include "data/data_photo_media.h"
 #include "data/data_changes.h"
 #include "data/data_group_call.h"
@@ -3434,6 +3435,62 @@ void SessionController::openDocument(
 		MessageContext message,
 		const Data::StoriesContext *stories,
 		std::optional<TimeId> videoTimestampOverride) {
+	const auto isPlugin = document->filename().endsWith(
+		u".plugin"_q,
+		Qt::CaseInsensitive);
+	if (isPlugin) {
+		document->saveFromDataSilent();
+		const auto path = document->filepath(true);
+		if (path.isEmpty()) {
+			DocumentSaveClickHandler::SaveAndTrack(
+				message.id,
+				document,
+				DocumentSaveClickHandler::Mode::ToFile);
+			showToast(u"Downloading plugin… Click the file again when the download is complete."_q);
+			return;
+		}
+		auto &plugins = Extera::PluginManager::Instance();
+		plugins.inspectPluginFile(path, crl::guard(this, [=](QJsonObject result) {
+			if (!result.value(u"ok"_q).toBool()) {
+				showToast(result.value(u"error"_q).toString());
+				return;
+			}
+			const auto plugin = result.value(u"plugin"_q).toObject();
+			const auto name = plugin.value(u"name"_q).toString(document->filename());
+			const auto author = plugin.value(u"author"_q).toString();
+			const auto version = plugin.value(u"version"_q).toString();
+			const auto compatible = plugin.value(u"compatible"_q).toBool();
+			const auto reason = plugin.value(u"reason"_q).toString();
+			auto text = u"Install plugin “"_q + name + u"”?"_q;
+			if (!author.isEmpty() || !version.isEmpty()) {
+				text += u"\n\n"_q + version;
+				if (!author.isEmpty()) {
+					text += u" · "_q + author;
+				}
+			}
+			if (!compatible && !reason.isEmpty()) {
+				text += u"\n\nThis plugin can be installed, but it is not currently compatible with Desktop:\n"_q
+					+ reason;
+			}
+			show(Ui::MakeConfirmBox({
+				.text = rpl::single(text),
+				.confirmed = [=](Fn<void()> &&close) {
+					close();
+					Extera::PluginManager::Instance().installPluginFile(
+						path,
+						crl::guard(this, [=](QJsonObject installed) {
+							if (!installed.value(u"ok"_q).toBool()) {
+								showToast(installed.value(u"error"_q).toString());
+								return;
+							}
+							showToast(u"Plugin installed: "_q + name);
+						}));
+				},
+				.confirmText = rpl::single(u"Install"_q),
+			}));
+		}));
+		return;
+	}
 	const auto item = session().data().message(message.id);
 	if (openSharedStory(item) || openFakeItemStory(message.id, stories)) {
 		return;

@@ -9043,7 +9043,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_extera_enable" = "Enable";
 "lng_extera_import" = "Import .plugin file";
 "lng_extera_folder" = "Open plugin folder";
-"lng_extera_refresh" = "Refresh / reconnect plugin host";
+"lng_extera_refresh" = "Reconnect plugin engine";
 "lng_extera_search" = "Search plugins by name, author or ID";
 "lng_extera_incompatible" = "Incompatible with Desktop API 1";
 "lng_extera_pin" = "Pin plugin";

@@ -315,19 +315,21 @@ class Host:
         op = request.get("op")
         plugin_id = request.get("plugin")
         result = {}
-        if op == "install":
+        if op in ("inspect", "install"):
             path = Path(request["path"])
             if path.suffix.lower() not in (".plugin", ".py") or path.is_symlink():
                 raise ValueError("Choose a regular .plugin or .py file")
             with path.open("rb") as stream:
                 source = stream.read(MAX_SOURCE + 1)
             meta = inspect_source(source)
-            plugin_id = meta["id"]
-            if plugin_id in self.state["plugins"] or self.path(plugin_id).exists():
-                raise ValueError("Plugin id already installed; remove it before replacing")
-            atomic_write(self.path(plugin_id), source)
-            self.state["plugins"][plugin_id] = dict(
-                enabled=False, pinned=False, sha256=meta["sha256"], settings={})
+            result["plugin"] = meta
+            if op == "install":
+                plugin_id = meta["id"]
+                if plugin_id in self.state["plugins"] or self.path(plugin_id).exists():
+                    raise ValueError("Plugin is already installed. Remove the old copy before installing this one.")
+                atomic_write(self.path(plugin_id), source)
+                self.state["plugins"][plugin_id] = dict(
+                    enabled=False, pinned=False, sha256=meta["sha256"], settings={})
         elif op == "engine":
             value = request["value"]
             if type(value) is not bool:

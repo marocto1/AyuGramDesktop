@@ -44,15 +44,6 @@ const auto kMainMeta = BuildHelper({
 	.icon = &st::menuIconFave,
 }, [](SectionBuilder &builder) {
 	builder.addSkip();
-	builder.add([](const WidgetContext &ctx) -> SectionBuilder::WidgetToAdd {
-		return {
-			.widget = object_ptr<Ui::FlatLabel>(ctx.container,
-				u"ExteraGram Desktop · "_q + QString::fromLatin1(AppVersionStr),
-				st::boxTitle),
-			.align = style::al_top,
-		};
-	});
-	builder.addDividerText(tr::lng_extera_about());
 	builder.addSubsectionTitle(tr::ayu_CategoriesHeader());
 	builder.addSectionButton({
 		.title = tr::ayu_CategoryGeneral(),
@@ -86,7 +77,7 @@ const auto kMainMeta = BuildHelper({
 	builder.addButton({
 		.title = tr::ayu_LinksDocumentation(),
 		.icon = { &st::menuIconIpAddress },
-		.label = rpl::single(u"Desktop API 1"_q),
+		.label = rpl::single(u"Desktop API 2"_q),
 		.onClick = [] {
 			QDesktopServices::openUrl(QUrl(
 				u"https://github.com/airgram-real/ExteraGramDesktop/blob/dev/docs/extera-plugins.md"_q));
@@ -108,7 +99,7 @@ const auto kPluginsMeta = BuildHelper({
 	.title = &tr::lng_extera_plugins,
 	.icon = &st::menuIconBot,
 }, [](SectionBuilder &builder) {
-	builder.addDividerText(tr::lng_extera_warning());
+	builder.addSkip();
 });
 
 }
@@ -135,6 +126,7 @@ ExteraPlugins::ExteraPlugins(
 	build(content, kPluginsMeta.build);
 	auto &manager = Extera::PluginManager::Instance();
 	manager.start();
+	AddText(content, u"Plugins"_q);
 	const auto engine = content->add(object_ptr<Ui::SettingsButton>(
 		content, tr::lng_extera_engine(), st::settingsButton));
 	engine->toggleOn(rpl::single(rpl::empty_value()) | rpl::then(manager.changes())
@@ -157,6 +149,8 @@ ExteraPlugins::ExteraPlugins(
 			}));
 		}
 	});
+	Ui::AddSkip(content);
+	AddText(content, u"Manage plugins"_q);
 	const auto install = content->add(object_ptr<Ui::SettingsButton>(
 		content, tr::lng_extera_import(), st::settingsButton));
 	install->addClickHandler([=] { importPlugin(); });
@@ -171,6 +165,8 @@ ExteraPlugins::ExteraPlugins(
 	restart->addClickHandler([=] {
 		Extera::PluginManager::Instance().restart();
 	});
+	Ui::AddSkip(content);
+	AddText(content, u"Installed"_q);
 	_search = content->add(object_ptr<Ui::InputField>(
 		content, st::settingsAddReplyField, tr::lng_extera_search()),
 		st::boxRowPadding);
@@ -234,7 +230,9 @@ void ExteraPlugins::refresh() {
 			continue;
 		}
 		++count;
-		Ui::AddDivider(_list);
+		if (count > 1) {
+			Ui::AddDivider(_list);
+		}
 		const auto enabled = plugin.value(u"enabled"_q).toBool();
 		const auto compatible = plugin.value(u"compatible"_q).toBool();
 		const auto button = _list->add(object_ptr<Ui::SettingsButton>(
@@ -257,8 +255,17 @@ void ExteraPlugins::refresh() {
 				}));
 			}
 		});
-		AddText(_list, plugin.value(u"version"_q).toString() + u" · "_q + author);
-		AddText(_list, plugin.value(u"description"_q).toString());
+		auto meta = plugin.value(u"version"_q).toString();
+		if (!author.isEmpty()) {
+			meta += (meta.isEmpty() ? QString() : u" · "_q) + author;
+		}
+		if (!meta.isEmpty()) {
+			AddText(_list, meta);
+		}
+		const auto description = plugin.value(u"description"_q).toString();
+		if (!description.isEmpty()) {
+			AddText(_list, description);
+		}
 		if (!compatible) {
 			AddText(_list, tr::lng_extera_incompatible(tr::now)
 				+ '\n' + plugin.value(u"reason"_q).toString());
@@ -270,12 +277,6 @@ void ExteraPlugins::refresh() {
 			_list, tr::lng_extera_settings(), st::settingsButton));
 		settings->setDisabled(!manager.ready() || !plugin.value(u"active"_q).toBool());
 		settings->addClickHandler([=] { showSettings(plugin); });
-		const auto pinned = plugin.value(u"pinned"_q).toBool();
-		const auto pin = _list->add(object_ptr<Ui::SettingsButton>(
-			_list, pinned ? tr::lng_extera_unpin() : tr::lng_extera_pin(), st::settingsButton));
-		pin->addClickHandler([=] {
-			command({ { u"op"_q, u"pin"_q }, { u"plugin"_q, id }, { u"value"_q, !pinned } });
-		});
 		const auto remove = _list->add(object_ptr<Ui::SettingsButton>(
 			_list, tr::lng_box_remove(), st::settingsButton));
 		remove->addClickHandler([=] {

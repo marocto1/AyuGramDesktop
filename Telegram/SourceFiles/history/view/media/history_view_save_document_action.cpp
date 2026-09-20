@@ -14,12 +14,14 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_peer.h"
 #include "data/data_saved_music.h"
 #include "data/data_session.h"
+#include "extera/plugin_manager.h"
 #include "history/view/history_view_context_menu.h"
 #include "history/view/history_view_list_widget.h"
 #include "history/history.h"
 #include "history/history_item.h"
 #include "lang/lang_keys.h"
 #include "ui/toast/toast.h"
+#include "ui/boxes/confirm_box.h"
 #include "ui/widgets/menu/menu_add_action_callback.h"
 #include "ui/widgets/menu/menu_add_action_callback_factory.h"
 #include "ui/widgets/menu/menu_multiline_action.h"
@@ -39,6 +41,47 @@ void AddSaveDocumentAction(
 		not_null<DocumentData*> document,
 		not_null<Window::SessionController*> controller) {
 	const auto contextId = item->fullId();
+	if (document->filename().endsWith(u".plugin"_q, Qt::CaseInsensitive)) {
+		addAction(
+			u"Install plugin"_q,
+			[=] {
+				document->saveFromDataSilent();
+				const auto path = document->filepath(true);
+				if (path.isEmpty()) {
+					DocumentSaveClickHandler::SaveAndTrack(
+						contextId,
+						document,
+						DocumentSaveClickHandler::Mode::ToFile);
+					controller->showToast(u"Downloading plugin… Click Install plugin again when it finishes."_q);
+					return;
+				}
+				Extera::PluginManager::Instance().inspectPluginFile(
+					path,
+					crl::guard(controller, [=](QJsonObject result) {
+						if (!result.value(u"ok"_q).toBool()) {
+							controller->showToast(result.value(u"error"_q).toString());
+							return;
+						}
+						const auto plugin = result.value(u"plugin"_q).toObject();
+						const auto name = plugin.value(u"name"_q).toString(document->filename());
+						controller->show(Ui::MakeConfirmBox({
+							.text = rpl::single(u"Install plugin “"_q + name + u"”?"_q),
+							.confirmed = [=](Fn<void()> &&close) {
+								close();
+								Extera::PluginManager::Instance().installPluginFile(
+									path,
+									crl::guard(controller, [=](QJsonObject installed) {
+										controller->showToast(installed.value(u"ok"_q).toBool()
+											? (u"Plugin installed: "_q + name)
+											: installed.value(u"error"_q).toString());
+									}));
+							},
+							.confirmText = rpl::single(u"Install"_q),
+						}));
+					}));
+			},
+			&st::menuIconDownload);
+	}
 	const auto fromSaved = item->history()->peer->isSelf();
 	const auto savedMusic = &document->owner().savedMusic();
 	const auto show = controller->uiShow();
