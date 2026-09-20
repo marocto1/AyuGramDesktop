@@ -2,7 +2,7 @@ name: ExteraGram Windows
 
 on:
   push:
-    branches: [dev]
+    branches: [dev, exteragram-pc]
     paths-ignore: ['docs/**', '*.md']
   pull_request:
     branches: [dev]
