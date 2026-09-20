@@ -1,3 +1,11 @@
+# ExteraGram Desktop (экспериментальный форк)
+
+AyuGram Desktop с разделом ExteraGram и движком Python-плагинов Desktop API 1. Android/Java-плагины требуют переноса; исходный Feel Rich не запускается без адаптации.
+
+[Инструкция и совместимость](docs/extera-plugins.md) · [Windows-сборки в Actions](https://github.com/airgram-real/ExteraGramDesktop/actions/workflows/extera-windows.yml)
+
+Ниже сохранены описание и авторство оригинального AyuGram. Ссылки на его официальные сборки не включают движок этого форка.
+
 # AyuGram
 
 ![AyuGram Лого](.github/AyuGram.png) ![AyuChan](.github/AyuChan.png)
