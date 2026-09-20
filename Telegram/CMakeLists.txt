@@ -102,6 +102,10 @@ PRIVATE
 )
 
 set(ayugram_files
+        extera/plugin_manager.cpp
+        extera/plugin_manager.h
+        extera/settings_extera.cpp
+        extera/settings_extera.h
         ayu/ayu_worker.cpp
         ayu/ayu_worker.h
         ayu/ayu_url_handlers.cpp
@@ -2514,6 +2518,15 @@ else()
 endif()
 
 set_target_properties(Telegram PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${output_folder})
+
+add_custom_command(TARGET Telegram POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${res_loc}/extera_runtime
+        $<TARGET_FILE_DIR:Telegram>/extera_runtime
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${PROJECT_SOURCE_DIR}/plugins/examples
+        $<TARGET_FILE_DIR:Telegram>/plugin_examples
+)
 
 if (MSVC)
     target_link_libraries(Telegram
