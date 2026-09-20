@@ -4,6 +4,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QRegularExpression>
@@ -109,7 +110,9 @@ void PluginManager::restart() {
 	shutdown();
 	_stopping = false;
 	start();
-}\n\nvoid PluginManager::request(QJsonObject command, Fn<void(QJsonObject)> done) {
+}
+
+void PluginManager::request(QJsonObject command, Fn<void(QJsonObject)> done) {
 	if (!_ready || _pending.size() >= 32) {
 		if (done) {
 			done({ { u"ok"_q, false }, { u"error"_q,

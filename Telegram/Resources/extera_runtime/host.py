@@ -9,15 +9,16 @@ import re
 import sys
 import types
 
-from base_plugin import BasePlugin
-from ui.settings import Divider, Header, Input, Selector, Switch
+from base_plugin import AppEvent, BasePlugin
+from ui.settings import Custom, Divider, EditText, Header, Input, Selector, Switch, Text
 
 
 MAX_SOURCE = 1024 * 1024
 MAX_MESSAGE = 2 * 1024 * 1024
 ID_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,31}\Z")
-ANDROID_IMPORTS = ("android", "java", "javax", "org.telegram", "com", "hook_utils",
-                   "android_utils", "client_utils", "jnius", "chaquopy")
+ANDROID_IMPORTS = ("android", "java", "javax", "org.telegram", "com.exteragram",
+                   "de.robv.android.xposed", "jnius", "chaquopy")
+SDK_VERSION = "1.4.4.3-desktop.2"
 
 
 def atomic_write(path, data):
@@ -37,7 +38,7 @@ def inspect_source(source):
     tree = ast.parse(source.decode("utf-8-sig"))
     metadata = {}
     keys = ("id", "name", "description", "author", "version", "icon", "platform",
-            "desktop_api", "requirements")
+            "desktop_api", "requirements", "app_version", "sdk_version", "min_version")
     for node in tree.body:
         if isinstance(node, ast.Assign):
             for target in node.targets:
@@ -236,8 +237,8 @@ class Host:
             raise ValueError("Expected at most 100 settings rows")
         keys = set()
         for row in rows:
-            if type(row) not in (Header, Divider, Input, Switch, Selector):
-                raise ValueError("Unsupported Desktop setting type")
+            if type(row) not in (Header, Divider, Input, Switch, Selector, Text, EditText, Custom):
+                raise ValueError("Unsupported plugin setting type")
             if hasattr(row, "key"):
                 if not isinstance(row.key, str) or not row.key or row.key in keys:
                     raise ValueError("Settings keys must be non-empty and unique")
@@ -296,8 +297,8 @@ class Host:
         result = {}
         if op == "install":
             path = Path(request["path"])
-            if path.suffix.lower() != ".plugin" or path.is_symlink():
-                raise ValueError("Choose a regular .plugin file")
+            if path.suffix.lower() not in (".plugin", ".py") or path.is_symlink():
+                raise ValueError("Choose a regular .plugin or .py file")
             with path.open("rb") as stream:
                 source = stream.read(MAX_SOURCE + 1)
             meta = inspect_source(source)
