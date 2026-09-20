@@ -1,3 +1,11 @@
+# ExteraGram Desktop (experimental fork)
+
+AyuGram Desktop with an ExteraGram-inspired settings section and a Python Desktop API 1 plugin engine. Android/Java plugins require porting; they do not run unchanged.
+
+[Plugin guide and compatibility](docs/extera-plugins.md) · [Windows builds in Actions](https://github.com/airgram-real/ExteraGramDesktop/actions/workflows/extera-windows.yml)
+
+The original AyuGram project information and credits follow. Its upstream download links do not contain this fork's plugin engine.
+
 # AyuGram
 
 ![AyuGram Logo](.github/AyuGram.png) ![AyuChan](.github/AyuChan.png)
