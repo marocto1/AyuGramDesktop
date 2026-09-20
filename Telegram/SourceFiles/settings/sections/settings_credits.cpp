@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "settings/sections/settings_credits.h"
+#include "extera/plugin_manager.h"
 
 #include "api/api_credits.h"
 #include "api/api_earn.h"
@@ -571,9 +572,9 @@ void Credits::setupContent() {
 				lt_emoji,
 				rpl::single(Ui::MakeCreditsIconEntity()),
 				lt_amount,
-				(isCurrency
+				Extera::DisplayBalanceValue(isCurrency
 					? controller()->session().credits().tonBalanceValue()
-					: controller()->session().credits().balanceValue()
+					: controller()->session().credits().balanceValue(), isCurrency
 				) | rpl::map(
 					Lang::FormatCreditsAmountDecimal
 				) | rpl::map(tr::bold),
@@ -582,6 +583,12 @@ void Credits::setupContent() {
 			st::defaultPopupMenu,
 			std::move(context)),
 		style::al_top);
+	content->add(object_ptr<Ui::FlatLabel>(content,
+		Extera::PluginManager::Instance().previewValue(isCurrency)
+			| rpl::map([](const QString &preview) {
+				return preview.isEmpty() ? QString() : tr::lng_extera_preview(tr::now);
+			}),
+		st::boxLabel), style::al_top);
 	if (isCurrency) {
 		const auto rate = controller()->session().credits().usdRate();
 		const auto wrap = content->add(
@@ -711,9 +718,9 @@ base::weak_qptr<Ui::RpWidget> Credits::createPinnedToTop(
 		const auto balance = AddBalanceWidget(
 			content,
 			&controller()->session(),
-			isCurrency
+			Extera::DisplayBalanceValue(isCurrency
 				? controller()->session().credits().tonBalanceValue()
-				: controller()->session().credits().balanceValue(),
+				: controller()->session().credits().balanceValue(), isCurrency),
 			true,
 			content->heightValue() | rpl::map([=](int height) {
 				const auto ratio = float64(height - content->minimumHeight())
