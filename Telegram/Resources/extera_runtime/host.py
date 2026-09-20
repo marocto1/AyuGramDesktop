@@ -20,6 +20,13 @@ ANDROID_IMPORTS = ("android", "java", "javax", "org.telegram", "com.exteragram",
                    "de.robv.android.xposed", "jnius", "chaquopy")
 SDK_VERSION = "1.4.4.3-desktop.2"
 
+def detect_native_adapter(metadata):
+    name = str(metadata.get("name", "")).strip().casefold()
+    plugin_id = str(metadata.get("id", "")).strip().casefold().replace("-", "_")
+    if name == "unlimited pins" or plugin_id in ("unlimited_pins", "unlimitedpins"):
+        return "unlimited_pins"
+    return ""
+
 
 def atomic_write(path, data):
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -63,8 +70,9 @@ def inspect_source(source):
     android = sorted({name for name in imports if any(
         name == prefix or name.startswith(prefix + ".") for prefix in ANDROID_IMPORTS
     )})
+    native_adapter = detect_native_adapter(metadata)
     reason = ""
-    if android:
+    if android and not native_adapter:
         reason = "Android/Java runtime APIs are not available on Windows: " + ", ".join(android)
     requirements = metadata.get("requirements", [])
     if requirements is None:
@@ -76,6 +84,7 @@ def inspect_source(source):
         metadata["app_version"] = ">=" + str(metadata["min_version"])
     metadata.update(compatible=not reason, reason=reason,
                     desktop_native=(metadata.get("platform") == "desktop" and metadata.get("desktop_api") in (1, 2)),
+                    native_adapter=native_adapter,
                     sdk_version_runtime=SDK_VERSION,
                     sha256=hashlib.sha256(source).hexdigest())
     return metadata
@@ -162,6 +171,14 @@ class Host:
             raise ValueError(meta["reason"])
         if meta["sha256"] != record["sha256"] or meta["id"] != plugin_id:
             raise ValueError("Plugin file changed. Remove it and import the reviewed file again.")
+        if meta.get("native_adapter"):
+            plugin = BasePlugin()
+            plugin.id = plugin_id
+            plugin.import_settings(record.get("settings", {}))
+            self.active[plugin_id] = plugin
+            self.modules[plugin_id] = ""
+            record.pop("error", None)
+            return
         module_name = "extera_plugin_" + plugin_id
         module = types.ModuleType(module_name)
         module.__file__ = str(self.path(plugin_id))
@@ -200,6 +217,7 @@ class Host:
     def snapshot(self):
         plugins = []
         previews = {}
+        native = {}
         for plugin_id, record in self.state["plugins"].items():
             try:
                 meta = inspect_source(self.source(plugin_id))
@@ -218,10 +236,12 @@ class Host:
                 plugin = self.active[plugin_id]
                 previews.update(plugin._previews)
                 meta["logs"] = plugin._logs
+                if meta.get("native_adapter"):
+                    native[meta["native_adapter"]] = True
             plugins.append(meta)
         plugins.sort(key=lambda meta: (not meta["pinned"], meta["name"].casefold()))
         return dict(engine=self.state["engine"], plugins=plugins, previews=previews,
-                    warning=self.warning, api=2, sdk_version=SDK_VERSION,
+                    native=native, warning=self.warning, api=2, sdk_version=SDK_VERSION,
                     capabilities={
                         "metadata": True, "lifecycle": True, "app_events": True,
                         "settings": ["Header", "Divider", "Switch", "Selector", "Input", "Text", "EditText"],

@@ -61,6 +61,24 @@ class PluginTests(unittest.TestCase):
         self.assertTrue(meta["compatible"])
         self.assertEqual(meta["sdk_version"], ">=1.4.4.3")
 
+    def test_unlimited_pins_uses_native_desktop_adapter(self):
+        path = self.make_plugin(
+            '__id__="unlimited_pins"\n'
+            '__name__="Unlimited Pins"\n'
+            '__author__="@mihailkotovski & @mishabotov"\n'
+            'from java.lang import Integer\n'
+            'from org.telegram.messenger import MessagesController\n'
+            'raise RuntimeError("android source must not execute on desktop")\n'
+        )
+        meta = inspect_source(path.read_bytes())
+        self.assertTrue(meta["compatible"])
+        self.assertEqual(meta["native_adapter"], "unlimited_pins")
+        self.install(path)
+        self.host.dispatch(dict(op="engine", value=True))
+        result = self.host.dispatch(dict(op="enable", plugin="unlimited_pins", value=True))
+        self.assertTrue(result["snapshot"]["native"]["unlimited_pins"])
+        self.assertTrue(result["snapshot"]["plugins"][0]["active"])
+
     def test_path_traversal_id_rejected(self):
         for plugin_id in ("../outside", "x/y", "x\\y", "x", "0x", "x" * 33):
             with self.subTest(plugin_id=plugin_id), self.assertRaises(ValueError):

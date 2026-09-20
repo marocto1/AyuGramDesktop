@@ -19,6 +19,7 @@ constexpr auto kMaxMessage = 2 * 1024 * 1024;
 
 PluginManager &PluginManager::Instance() {
 	static const auto result = new PluginManager(QCoreApplication::instance());
+	result->start();
 	return *result;
 }
 
@@ -174,8 +175,10 @@ void PluginManager::receive() {
 void PluginManager::applySnapshot(QJsonObject snapshot) {
 	_snapshot = std::move(snapshot);
 	const auto previews = _snapshot.value(u"previews"_q).toObject();
+	const auto native = _snapshot.value(u"native"_q).toObject();
 	_stars = previews.value(u"stars"_q).toString();
 	_ton = previews.value(u"ton"_q).toString();
+	_unlimitedPins = native.value(u"unlimited_pins"_q).toBool();
 	_changes.fire({});
 }
 
@@ -187,6 +190,7 @@ void PluginManager::fail(QString error) {
 	_process.kill();
 	_stars = QString();
 	_ton = QString();
+	_unlimitedPins = false;
 	_snapshot.insert(u"engine"_q, false);
 	_snapshot.insert(u"previews"_q, QJsonObject());
 	const auto pending = std::exchange(_pending, {});
@@ -234,6 +238,14 @@ rpl::producer<> PluginManager::changes() const {
 
 rpl::producer<QString> PluginManager::previewValue(bool ton) const {
 	return ton ? _ton.value() : _stars.value();
+}
+
+bool PluginManager::unlimitedPins() const {
+	return _unlimitedPins.current();
+}
+
+rpl::producer<bool> PluginManager::unlimitedPinsValue() const {
+	return _unlimitedPins.value();
 }
 
 rpl::producer<CreditsAmount> DisplayBalanceValue(

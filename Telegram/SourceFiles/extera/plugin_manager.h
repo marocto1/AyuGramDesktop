@@ -24,6 +24,8 @@ public:
 	[[nodiscard]] bool ready() const;
 	[[nodiscard]] rpl::producer<> changes() const;
 	[[nodiscard]] rpl::producer<QString> previewValue(bool ton) const;
+	[[nodiscard]] bool unlimitedPins() const;
+	[[nodiscard]] rpl::producer<bool> unlimitedPinsValue() const;
 
 private:
 	explicit PluginManager(QObject *parent);
@@ -44,6 +46,7 @@ private:
 	rpl::event_stream<> _changes;
 	rpl::variable<QString> _stars;
 	rpl::variable<QString> _ton;
+	rpl::variable<bool> _unlimitedPins = false;
 
 };
 
