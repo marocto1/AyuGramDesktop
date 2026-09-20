@@ -1,0 +1,25 @@
+from base_plugin import BasePlugin
+from ui.settings import Header, Input
+
+__id__ = "feel_rich_desktop"
+__name__ = "Feel Rich · Desktop"
+__description__ = "Local Stars and TON display preview. Does not change funds or payments."
+__author__ = "Desktop port; inspired by @PESSDES_Plugins"
+__version__ = "1.0.0"
+__platform__ = "desktop"
+__desktop_api__ = 1
+
+
+class FeelRichPlugin(BasePlugin):
+    def on_plugin_load(self):
+        self.set_balance_preview(self.get_setting("stars_amount", "1000"))
+        self.set_balance_preview(self.get_setting("ton_amount", "10"), "ton")
+
+    def create_settings(self):
+        return [
+            Header("Local preview only — not spendable"),
+            Input("stars_amount", "Stars amount", "1000",
+                  on_change=lambda value: self.set_balance_preview(value)),
+            Input("ton_amount", "TON amount", "10",
+                  on_change=lambda value: self.set_balance_preview(value, "ton")),
+        ]
