@@ -9037,6 +9037,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_extera_title" = "ExteraGram";
 "lng_extera_about" = "Based on AyuGram Desktop. Independent Desktop plugin API; Android/Java plugins need a port.";
 "lng_extera_plugins" = "Plugins";
+"lng_extera_settings" = "Settings";
 "lng_extera_engine" = "Enable plugin system";
 "lng_extera_warning" = "Plugins execute Python code with your operating-system permissions. They can access files and the network. A separate process protects the UI from crashes, but is not a security sandbox. Enable only code you trust. Android/Java hooks are not supported.";
 "lng_extera_enable" = "Enable";
