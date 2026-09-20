@@ -92,6 +92,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 // AyuGram includes
 #include "ayu/ui/settings/settings_main.h"
+#include "extera/settings_extera.h"
 #include "ayu/ui/utils/ayu_profile_values.h"
 #include "ayu/utils/telegram_helpers.h"
 
@@ -393,6 +394,12 @@ void BuildSectionButtons(SectionBuilder &builder) {
 		.targetSection = AyuMain::Id(),
 		.icon = { &st::menuIconPremium },
 		.keywords = { u"ayu"_q },
+	});
+	builder.addSectionButton({
+		.title = tr::lng_extera_title(),
+		.targetSection = ExteraMain::Id(),
+		.icon = { &st::menuIconBot },
+		.keywords = { u"extera"_q, u"plugins"_q, u"плагины"_q },
 	});
 	builder.addSkip();
 	builder.addDivider();
