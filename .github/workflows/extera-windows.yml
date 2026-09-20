@@ -1,0 +1,80 @@
+name: ExteraGram Windows
+
+on:
+  push:
+    branches: [dev]
+    paths-ignore: ['docs/**', '*.md']
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extera-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plugins:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test plugin lifecycle, persistence and protocol
+        run: python -B -m unittest discover -s tests/extera -v
+
+  windows:
+    if: github.event_name != 'pull_request'
+    needs: plugins
+    runs-on: windows-2025
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tdesktop
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Restore build dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            Libraries
+            ThirdParty
+          key: extera-win64-qt5-v1-${{ hashFiles('tdesktop/Telegram/build/prepare/**', 'tdesktop/Telegram/build/qt_version.py', 'tdesktop/.gitmodules') }}
+      - name: Prepare libraries and build Debug x64
+        working-directory: tdesktop
+        env:
+          TDESKTOP_API_ID: ${{ secrets.TDESKTOP_API_ID }}
+          TDESKTOP_API_HASH: ${{ secrets.TDESKTOP_API_HASH }}
+        run: ./scripts/build-extera-windows.ps1
+      - name: Package app, Python runtime and example plugins
+        working-directory: tdesktop
+        run: ./scripts/package-extera-windows.ps1
+      - name: Upload Windows portable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExteraGramDesktop-Windows-x64-Debug
+          path: tdesktop/dist/ExteraGramDesktop
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-build-logs
+          path: |
+            tdesktop/build-logs
+            tdesktop/out/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: ignore
