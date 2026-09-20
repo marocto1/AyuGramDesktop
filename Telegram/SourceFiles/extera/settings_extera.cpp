@@ -268,7 +268,7 @@ void ExteraPlugins::refresh() {
 			AddText(_list, plugin.value(u"error"_q).toString());
 		}
 		const auto settings = _list->add(object_ptr<Ui::SettingsButton>(
-			_list, tr::lng_settings_title(), st::settingsButton));
+			_list, tr::lng_extera_settings(), st::settingsButton));
 		settings->setDisabled(!manager.ready() || !plugin.value(u"active"_q).toBool());
 		settings->addClickHandler([=] { showSettings(plugin); });
 		const auto pinned = plugin.value(u"pinned"_q).toBool();
