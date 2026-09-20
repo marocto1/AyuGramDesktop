@@ -1,4 +1,4 @@
-param([switch]$CheckToolchain)
+param([switch]$CheckToolchain, [switch]$PrepareOnly, [switch]$SkipPrepare)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $repo
@@ -27,9 +27,18 @@ if ($CheckToolchain) {
     exit 0
 }
 $env:QT = '5.15.19'
-$env:CMAKE_BUILD_PARALLEL_LEVEL = '2'
-& python Telegram/build/prepare/prepare.py skip-release 2>&1 | Tee-Object build-logs/prepare.log
-if ($LASTEXITCODE -ne 0) { throw 'Preparing upstream dependencies failed; see prepare.log.' }
+if ($PrepareOnly -and $SkipPrepare) { throw 'PrepareOnly and SkipPrepare cannot be used together.' }
+$parallel = 4
+if ($env:NUMBER_OF_PROCESSORS) { $parallel = [Math]::Max(2, [Math]::Min(4, [int]$env:NUMBER_OF_PROCESSORS)) }
+$env:CMAKE_BUILD_PARALLEL_LEVEL = "$parallel"
+if (-not $SkipPrepare) {
+    & python Telegram/build/prepare/prepare.py skip-release 2>&1 | Tee-Object build-logs/prepare.log
+    if ($LASTEXITCODE -ne 0) { throw 'Preparing upstream dependencies failed; see prepare.log.' }
+}
+if ($PrepareOnly) {
+    Write-Output "DEPENDENCIES READY: parallel=$parallel"
+    exit 0
+}
 
 $options = @('-S', '.', '-B', 'out', '-G', $generator, '-A', 'x64', '-T', 'v143',
     '-DCMAKE_SYSTEM_VERSION=10.0.26100.0', '-DDESKTOP_APP_DISABLE_AUTOUPDATE=ON',
@@ -45,6 +54,6 @@ if ($env:TDESKTOP_API_ID -and $env:TDESKTOP_API_HASH) {
 }
 & cmake @options 2>&1 | Tee-Object build-logs/configure.log
 if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
-& cmake --build out --config Debug --target Telegram --parallel 2 2>&1 | Tee-Object build-logs/build.log
+& cmake --build out --config Debug --target Telegram --parallel $parallel 2>&1 | Tee-Object build-logs/build.log
 if ($LASTEXITCODE -ne 0) { throw 'Compiling Telegram failed.' }
 if (-not (Test-Path -LiteralPath out/Debug/AyuGram.exe)) { throw 'Expected AyuGram.exe was not produced.' }

@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: extera-windows-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   plugins:
@@ -47,18 +47,33 @@ jobs:
         with:
           python-version: '3.11'
       - name: Restore build dependencies
-        uses: actions/cache@v4
+        id: deps-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             Libraries
             ThirdParty
-          key: extera-win64-qt5-v1-${{ hashFiles('tdesktop/Telegram/build/prepare/**', 'tdesktop/Telegram/build/qt_version.py', 'tdesktop/.gitmodules') }}
-      - name: Prepare libraries and build Debug x64
+          key: extera-win64-qt5-v2-${{ hashFiles('tdesktop/Telegram/build/prepare/**', 'tdesktop/Telegram/build/qt_version.py', 'tdesktop/.gitmodules') }}
+          restore-keys: |
+            extera-win64-qt5-v2-
+      - name: Prepare upstream dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        working-directory: tdesktop
+        run: ./scripts/build-extera-windows.ps1 -PrepareOnly
+      - name: Save build dependencies
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            Libraries
+            ThirdParty
+          key: ${{ steps.deps-cache.outputs.cache-primary-key }}
+      - name: Build Debug x64
         working-directory: tdesktop
         env:
           TDESKTOP_API_ID: ${{ secrets.TDESKTOP_API_ID }}
           TDESKTOP_API_HASH: ${{ secrets.TDESKTOP_API_HASH }}
-        run: ./scripts/build-extera-windows.ps1
+        run: ./scripts/build-extera-windows.ps1 -SkipPrepare
       - name: Package app, Python runtime and example plugins
         working-directory: tdesktop
         run: ./scripts/package-extera-windows.ps1
