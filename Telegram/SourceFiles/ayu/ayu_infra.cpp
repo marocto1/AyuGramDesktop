@@ -7,6 +7,7 @@
 #include "ayu/ayu_infra.h"
 
 #include "ayu/ayu_lang.h"
+#include "extera/plugin_manager.h"
 #include "ayu/ayu_settings.h"
 #include "ayu/ayu_ui_settings.h"
 #include "ayu/ayu_worker.h"
@@ -75,6 +76,7 @@ void init() {
 	initWorker();
 	initRCManager();
 	initTranslator();
+	Extera::PluginManager::Instance().start();
 }
 
 }
