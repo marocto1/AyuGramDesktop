@@ -48,13 +48,14 @@ class PluginTests(unittest.TestCase):
         self.install(path)
         self.assertFalse(self.host.snapshot()["plugins"][0]["enabled"])
 
-    def test_android_import_detected_before_execution(self):
+    def test_simple_java_import_is_bridged_without_install_execution(self):
         path = self.make_plugin('__id__="android_plugin"\n__name__="Android"\n'
                                 'from java.lang import Boolean\nraise RuntimeError("executed")')
         self.install(path)
         meta = self.host.snapshot()["plugins"][0]
-        self.assertFalse(meta["compatible"])
-        self.assertIn("java.lang", meta["reason"])
+        self.assertTrue(meta["compatible"])
+        self.assertEqual(meta["compatibility"], "bridged")
+        self.assertFalse(meta["enabled"])
 
     def test_official_metadata_does_not_require_desktop_marker(self):
         meta = inspect_source(b'__id__="legacy"\n__name__="Legacy"\n__sdk_version__=">=1.4.4.3"')
