@@ -154,6 +154,10 @@ class BasePlugin:
         self._send_message_hook = None
         return existed
 
+    # Compatibility with plugins that shipped with the historical typo.
+    def rremove_on_send_message_hook(self):
+        return self.remove_on_send_message_hook()
+
     def hook_method(self, method, hook=None, priority=0, before=None, after=None):
         self.log("Android method hook skipped by Desktop compatibility bridge")
         return None
