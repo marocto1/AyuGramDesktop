@@ -17,6 +17,11 @@ if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant
 }
 Expand-Archive -LiteralPath $archive -DestinationPath $runtime -Force
 Add-Content -LiteralPath (Join-Path $runtime 'python313._pth') -Value '../extera_runtime' -Encoding ascii
+
+$vendor = Join-Path $destination 'extera_runtime/vendor'
+New-Item -ItemType Directory -Force $vendor | Out-Null
+python -m pip install --disable-pip-version-check --no-input --target $vendor 'requests==2.32.5' 'urllib3==2.5.0' 'certifi==2025.8.3' 'charset-normalizer==3.4.3' 'idna==3.10'
+if ($LASTEXITCODE -ne 0) { throw 'Bundling plugin Python dependencies failed.' }
 Copy-Item -LiteralPath LICENSE,LEGAL -Destination $destination
 Copy-Item -LiteralPath docs/extera-plugins.md -Destination (Join-Path $destination 'PLUGINS.md')
 Copy-Item -LiteralPath build-logs/api-mode.txt -Destination $destination
