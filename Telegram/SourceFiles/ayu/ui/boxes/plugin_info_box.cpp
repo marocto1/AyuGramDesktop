@@ -428,7 +428,7 @@ void FillPluginInfoBox(
 		});
 
 	const auto closeButton = box->addButton(
-		tr::lng_cancel(),
+		tr::lng_close(),
 		[=] { box->closeBox(); });
 	const auto buttonWidth = box->width()
 		- rect::m::sum::h(st::starrefFooterBox.buttonPadding);
