@@ -2,6 +2,8 @@
 
 #include "storage/localstorage.h"
 
+#include <algorithm>
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>

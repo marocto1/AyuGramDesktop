@@ -361,6 +361,9 @@ class Host:
         previous = plugin.export_settings(), copy.deepcopy(plugin._previews)
         try:
             plugin.set_setting(key, value)
+            changed = getattr(plugin, "on_settings_changed", None)
+            if callable(changed):
+                changed(key, value)
             if row.on_change:
                 row.on_change(value)
             self.save()

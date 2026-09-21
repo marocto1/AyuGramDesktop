@@ -376,6 +376,31 @@ class Plugin(BasePlugin):
         result=self.host.dispatch(dict(op="hook_send_message", account=0, value={"message":"hello","peer":1}))
         self.assertEqual(result["hook"]["value"]["message"], "HELLO")
 
+    def test_plugin_on_settings_changed_callback(self):
+        path = self.make_plugin('''from base_plugin import BasePlugin
+from ui.settings import Switch
+__id__="settings_changed"
+__name__="Settings changed"
+class Plugin(BasePlugin):
+    def create_settings(self):
+        return [Switch("enabled", "Enabled", True)]
+    def on_settings_changed(self, key=None, value=None):
+        self.set_setting("changed_key", key)
+        self.set_setting("changed_value", value)
+''')
+        self.install(path)
+        self.host.dispatch(dict(op="engine", value=True))
+        self.host.dispatch(dict(op="enable", plugin="settings_changed", value=True))
+        self.host.dispatch(dict(
+            op="set_setting",
+            plugin="settings_changed",
+            key="enabled",
+            value=False,
+        ))
+        settings = self.host.state["plugins"]["settings_changed"]["settings"]
+        self.assertEqual(settings["changed_key"], "enabled")
+        self.assertFalse(settings["changed_value"])
+
     def test_long_quote_auto_compatibility_shape(self):
         path = self.make_plugin(r'''import re
 from base_plugin import BasePlugin, HookResult, HookStrategy
