@@ -5,6 +5,7 @@
 //
 // Copyright @Radolyn, 2026
 #include "ayu/ui/boxes/plugin_info_box.h"
+#include "extera/plugin_manager.h"
 
 #include "apiwrap.h"
 #include "core/file_utilities.h"
@@ -409,17 +410,25 @@ void FillPluginInfoBox(
 
 	Ui::AddSkip(box->verticalLayout());
 
-	box->verticalLayout()->add(
-		object_ptr<Ui::FlatLabel>(
-			box->verticalLayout(),
-			tr::ayu_PluginsNotAvailable(),
-			st::boxDividerLabel),
-		st::boxRowPadding);
-
-	Ui::AddSkip(box->verticalLayout());
+	const auto installButton = box->addButton(
+		tr::lng_extera_import(),
+		[=] {
+			Extera::PluginManager::Instance().installPluginFile(
+				pluginPath,
+				[=](QJsonObject result) {
+					crl::on_main(box, [=] {
+						if (!result.value(u"ok"_q).toBool()) {
+							controller->showToast(result.value(u"error"_q).toString());
+							return;
+						}
+						controller->showToast(u"Plugin installed"_q);
+						box->closeBox();
+					});
+				});
+		});
 
 	const auto closeButton = box->addButton(
-		tr::lng_close(),
+		tr::lng_cancel(),
 		[=] { box->closeBox(); });
 	const auto buttonWidth = box->width()
 		- rect::m::sum::h(st::starrefFooterBox.buttonPadding);
