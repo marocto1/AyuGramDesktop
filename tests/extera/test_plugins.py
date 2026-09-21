@@ -376,6 +376,66 @@ class Plugin(BasePlugin):
         result=self.host.dispatch(dict(op="hook_send_message", account=0, value={"message":"hello","peer":1}))
         self.assertEqual(result["hook"]["value"]["message"], "HELLO")
 
+    def test_long_quote_auto_compatibility_shape(self):
+        path = self.make_plugin(r'''import re
+from base_plugin import BasePlugin, HookResult, HookStrategy
+from java.util import ArrayList
+from org.telegram.tgnet import TLRPC
+__id__="long_quote_test"
+__name__="LongQuote test"
+_BLOCKQUOTE_CLS = TLRPC.TL_messageEntityBlockquote
+class Plugin(BasePlugin):
+    def on_plugin_load(self):
+        self.add_on_send_message_hook()
+    def on_send_message_hook(self, account, params):
+        if "java" not in str(params.message).lower():
+            return HookResult()
+        entities = params.entities
+        for i in range(entities.size()):
+            if isinstance(entities.get(i), _BLOCKQUOTE_CLS):
+                return HookResult()
+        quote = _BLOCKQUOTE_CLS()
+        quote.offset = 0
+        quote.length = len(str(params.message))
+        quote.flags = 1
+        quote.collapsed = True
+        entities.add(0, quote)
+        return HookResult(strategy=HookStrategy.MODIFY, params=params)
+''')
+        self.install(path)
+        self.host.dispatch(dict(op="engine", value=True))
+        self.host.dispatch(dict(op="enable", plugin="long_quote_test", value=True))
+        snapshot = self.host.snapshot()
+        self.assertEqual(snapshot["hooks"]["send_message"], 1)
+        result = self.host.dispatch(dict(
+            op="hook_send_message",
+            account=0,
+            value={"message": "java crash log", "entities": []},
+        ))["hook"]
+        self.assertEqual(result["executed"], ["long_quote_test"])
+        entity = result["value"]["entities"][0]
+        self.assertEqual(entity["__tlrpc__"], "TL_messageEntityBlockquote")
+        self.assertEqual(entity["offset"], 0)
+        self.assertEqual(entity["length"], len("java crash log"))
+        self.assertTrue(entity["collapsed"])
+
+    def test_nested_android_import_modules_exist(self):
+        from compat import install_compat_modules
+        install_compat_modules()
+        from android.text.style import URLSpan
+        from android.graphics.drawable import GradientDrawable
+        from android.widget import FrameLayout
+        from java import jarray, jfloat, jint, jlong
+        from java.lang.ref import WeakReference
+        from java.net import URL
+        from org.telegram.ui.Components import URLSpanUserMention
+        floats = jarray(jfloat)(3)
+        ints = jarray(jint)(2)
+        longs = jarray(jlong)(1)
+        self.assertEqual((len(floats), len(ints), len(longs)), (3, 2, 1))
+        self.assertTrue(all(value is not None for value in (
+            URLSpan, GradientDrawable, FrameLayout, WeakReference, URL, URLSpanUserMention)))
+
     def test_protocol_subprocess(self):
         requests = [dict(op="list"), dict(op="install", path=str(EXAMPLE)),
                     dict(op="engine", value=True),

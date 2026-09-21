@@ -22,6 +22,13 @@ public:
 	void installPluginFile(QString path, Fn<void(QJsonObject)> done);
 	void executeHook(QString kind, QString name, int account, QJsonValue value,
 		Fn<void(QJsonObject)> done, QJsonValue error = QJsonValue());
+	[[nodiscard]] QJsonObject executeHookBlocking(
+		QString kind,
+		QString name,
+		int account,
+		QJsonValue value,
+		int timeoutMs = 500,
+		QJsonValue error = QJsonValue());
 	void request(QJsonObject command, Fn<void(QJsonObject)> done = nullptr);
 	[[nodiscard]] QJsonObject snapshot() const;
 	[[nodiscard]] QString error() const;
@@ -33,6 +40,7 @@ public:
 	[[nodiscard]] rpl::producer<bool> unlimitedPinsValue() const;
 	[[nodiscard]] bool noForwardLimit() const;
 	[[nodiscard]] rpl::producer<bool> noForwardLimitValue() const;
+	[[nodiscard]] bool hasSendMessageHooks() const;
 
 private:
 	explicit PluginManager(QObject *parent);
@@ -55,6 +63,7 @@ private:
 	rpl::variable<QString> _ton;
 	rpl::variable<bool> _unlimitedPins = false;
 	rpl::variable<bool> _noForwardLimit = false;
+	int _sendMessageHooks = 0;
 
 };
 

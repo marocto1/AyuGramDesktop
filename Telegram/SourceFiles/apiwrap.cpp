@@ -112,6 +112,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ayu/features/forward/ayu_forward.h"
 #include "extera/plugin_manager.h"
 
+#include <QJsonArray>
+
 
 namespace {
 
@@ -130,6 +132,104 @@ constexpr auto kStatsSessionKillTimeout = 10 * crl::time(1000);
 using PhotoFileLocationId = Data::PhotoFileLocationId;
 using DocumentFileLocationId = Data::DocumentFileLocationId;
 using UpdatedFileReferences = Data::UpdatedFileReferences;
+
+[[nodiscard]] QJsonArray ExteraSerializeSendEntities(
+		const EntitiesInText &entities) {
+	auto result = QJsonArray();
+	for (const auto &entity : entities) {
+		auto row = QJsonObject{
+			{ u"offset"_q, entity.offset() },
+			{ u"length"_q, entity.length() },
+		};
+		if (entity.type() == EntityType::Blockquote) {
+			row.insert(u"__tlrpc__"_q, u"TL_messageEntityBlockquote"_q);
+			row.insert(u"flags"_q, entity.data().isEmpty() ? 0 : 1);
+			row.insert(u"collapsed"_q, !entity.data().isEmpty());
+		} else {
+			row.insert(u"__desktop_entity__"_q, true);
+		}
+		result.append(row);
+	}
+	return result;
+}
+
+void ExteraMergeBlockquotes(
+		EntitiesInText &entities,
+		const QJsonArray &pluginEntities,
+		int textLength) {
+	for (const auto &value : pluginEntities) {
+		const auto row = value.toObject();
+		if (row.value(u"__tlrpc__"_q).toString()
+			!= u"TL_messageEntityBlockquote"_q) {
+			continue;
+		}
+		const auto offset = row.value(u"offset"_q).toInt(-1);
+		const auto length = row.value(u"length"_q).toInt(-1);
+		if (offset < 0
+			|| length <= 0
+			|| offset > textLength
+			|| length > textLength - offset) {
+			continue;
+		}
+		auto exists = false;
+		for (const auto &entity : entities) {
+			if (entity.type() == EntityType::Blockquote
+				&& entity.offset() == offset
+				&& entity.length() == length) {
+				exists = true;
+				break;
+			}
+		}
+		if (exists) {
+			continue;
+		}
+		const auto collapsed = row.value(u"collapsed"_q).toBool()
+			|| (row.value(u"flags"_q).toInt() & 1);
+		entities.push_back({
+			EntityType::Blockquote,
+			offset,
+			length,
+			collapsed ? u"1"_q : QString(),
+		});
+	}
+}
+
+[[nodiscard]] bool ApplyExteraSendMessageHook(Api::MessageToSend &message) {
+	auto &manager = Extera::PluginManager::Instance();
+	if (!manager.hasSendMessageHooks()) {
+		return true;
+	}
+	auto entities = TextUtilities::ConvertTextTagsToEntities(
+		message.textWithTags.tags);
+	const auto params = QJsonObject{
+		{ u"message"_q, message.textWithTags.text },
+		{ u"entities"_q, ExteraSerializeSendEntities(entities) },
+	};
+	const auto response = manager.executeHookBlocking(
+		u"send_message"_q,
+		QString(),
+		0,
+		params,
+		500);
+	if (!response.value(u"ok"_q).toBool()) {
+		return true;
+	}
+	const auto hook = response.value(u"hook"_q).toObject();
+	if (hook.value(u"cancelled"_q).toBool()) {
+		return false;
+	}
+	const auto result = hook.value(u"value"_q).toObject();
+	if (result.value(u"message"_q).isString()) {
+		message.textWithTags.text = result.value(u"message"_q).toString();
+	}
+	ExteraMergeBlockquotes(
+		entities,
+		result.value(u"entities"_q).toArray(),
+		message.textWithTags.text.size());
+	message.textWithTags.tags = TextUtilities::ConvertEntitiesToTextTags(
+		entities);
+	return true;
+}
 
 [[nodiscard]] bool ShouldSkipPlainDraftCloudSave(
 		not_null<Main::Session*> session,
@@ -4668,6 +4768,10 @@ void ApiWrap::sendMessage(
 	const auto history = message.action.history;
 	const auto peer = history->peer;
 	auto &textWithTags = message.textWithTags;
+
+	if (!ApplyExteraSendMessageHook(message)) {
+		return;
+	}
 
 	auto action = message.action;
 	action.generateLocal = true;

@@ -15,7 +15,7 @@ if VENDOR_DIR.is_dir() and str(VENDOR_DIR) not in sys.path:
     sys.path.insert(0, str(VENDOR_DIR))
 
 from base_plugin import AppEvent, BasePlugin, HookResult, HookStrategy
-from compat import install_compat_modules
+from compat import ArrayList, NullProxy, TLRPC, install_compat_modules
 from ui.settings import Custom, Divider, EditText, Header, Input, Selector, Switch, Text
 
 
@@ -115,11 +115,29 @@ class AttrDict(dict):
     def __setattr__(self,key,value): self[key]=value
 
 def to_plugin_value(value):
+    if isinstance(value,dict) and isinstance(value.get("__tlrpc__"),str):
+        class_name=value["__tlrpc__"]
+        if not re.fullmatch(r"TL_[A-Za-z0-9_]+", class_name):
+            raise ValueError("Invalid TLRPC compatibility class")
+        instance=getattr(TLRPC,class_name)()
+        for key,item in value.items():
+            if key!="__tlrpc__":
+                setattr(instance,key,to_plugin_value(item))
+        return instance
     if isinstance(value,dict): return AttrDict({k:to_plugin_value(v) for k,v in value.items()})
-    if isinstance(value,list): return [to_plugin_value(v) for v in value]
+    if isinstance(value,list): return ArrayList(to_plugin_value(v) for v in value)
     return value
 
 def to_json_value(value):
+    if isinstance(value,NullProxy):
+        name=object.__getattribute__(value,"_name")
+        values=object.__getattribute__(value,"_values")
+        if name.startswith("TLRPC."):
+            result={"__tlrpc__":name.split(".",1)[1]}
+            result.update({str(k):to_json_value(v) for k,v in values.items()})
+            return result
+        return {"__desktop_proxy__":name,
+                "values":{str(k):to_json_value(v) for k,v in values.items()}}
     if isinstance(value,dict): return {str(k):to_json_value(v) for k,v in value.items()}
     if isinstance(value,(list,tuple)): return [to_json_value(v) for v in value]
     if value is None or isinstance(value,(str,int,float,bool)): return value
@@ -254,6 +272,7 @@ class Host:
         plugins = []
         previews = {}
         native = {}
+        hooks = {"send_message": 0}
         for plugin_id, record in self.state["plugins"].items():
             try:
                 meta = inspect_source(self.source(plugin_id))
@@ -272,17 +291,19 @@ class Host:
                 plugin = self.active[plugin_id]
                 previews.update(plugin._previews)
                 meta["logs"] = plugin._logs
+                if plugin._send_message_hook is not None:
+                    hooks["send_message"] += 1
                 if meta.get("native_adapter"):
                     native[meta["native_adapter"]] = True
             plugins.append(meta)
         plugins.sort(key=lambda meta: (not meta["pinned"], meta["name"].casefold()))
         return dict(engine=self.state["engine"], plugins=plugins, previews=previews,
-                    native=native, warning=self.warning, api=2, sdk_version=SDK_VERSION,
+                    native=native, hooks=hooks, warning=self.warning, api=2, sdk_version=SDK_VERSION,
                     capabilities={
                         "metadata": True, "lifecycle": True, "app_events": True,
                         "settings": ["Header", "Divider", "Switch", "Selector", "Input", "Text", "EditText"],
                         "hook_runtime": ["pre_request", "post_request", "update", "updates", "send_message"],
-                        "python_requirements": False, "telegram_hooks": "runtime_ready_native_wiring_in_progress",
+                        "python_requirements": False, "telegram_hooks": ["send_message"],
                         "java_xposed": False, "custom_android_views": False,
                     })
 

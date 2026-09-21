@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QEventLoop>
 #include <QJsonDocument>
 #include <QRegularExpression>
 
@@ -153,6 +154,45 @@ void PluginManager::executeHook(
 	request(std::move(command), std::move(done));
 }
 
+QJsonObject PluginManager::executeHookBlocking(
+		QString kind,
+		QString name,
+		int account,
+		QJsonValue value,
+		int timeoutMs,
+		QJsonValue error) {
+	if (!_ready) {
+		return {};
+	}
+	struct State {
+		QJsonObject result;
+		bool done = false;
+		QEventLoop *loop = nullptr;
+	};
+	const auto state = std::make_shared<State>();
+	auto loop = QEventLoop();
+	state->loop = &loop;
+	executeHook(
+		std::move(kind),
+		std::move(name),
+		account,
+		std::move(value),
+		[state](QJsonObject result) {
+			state->result = std::move(result);
+			state->done = true;
+			if (state->loop) {
+				state->loop->quit();
+			}
+		},
+		std::move(error));
+	if (!state->done) {
+		QTimer::singleShot(std::max(1, timeoutMs), &loop, &QEventLoop::quit);
+		loop.exec(QEventLoop::ExcludeUserInputEvents);
+	}
+	state->loop = nullptr;
+	return state->done ? state->result : QJsonObject();
+}
+
 void PluginManager::request(QJsonObject command, Fn<void(QJsonObject)> done) {
 	if (!_ready || _pending.size() >= 32) {
 		if (done) {
@@ -216,10 +256,12 @@ void PluginManager::applySnapshot(QJsonObject snapshot) {
 	_snapshot = std::move(snapshot);
 	const auto previews = _snapshot.value(u"previews"_q).toObject();
 	const auto native = _snapshot.value(u"native"_q).toObject();
+	const auto hooks = _snapshot.value(u"hooks"_q).toObject();
 	_stars = previews.value(u"stars"_q).toString();
 	_ton = previews.value(u"ton"_q).toString();
 	_unlimitedPins = native.value(u"unlimited_pins"_q).toBool();
 	_noForwardLimit = native.value(u"no_forward_limit"_q).toBool();
+	_sendMessageHooks = hooks.value(u"send_message"_q).toInt();
 	_changes.fire({});
 }
 
@@ -233,6 +275,7 @@ void PluginManager::fail(QString error) {
 	_ton = QString();
 	_unlimitedPins = false;
 	_noForwardLimit = false;
+	_sendMessageHooks = 0;
 	_snapshot.insert(u"engine"_q, false);
 	_snapshot.insert(u"previews"_q, QJsonObject());
 	const auto pending = std::exchange(_pending, {});
@@ -294,6 +337,10 @@ bool PluginManager::noForwardLimit() const {
 }
 rpl::producer<bool> PluginManager::noForwardLimitValue() const {
 	return _noForwardLimit.value();
+}
+
+bool PluginManager::hasSendMessageHooks() const {
+	return _sendMessageHooks > 0;
 }
 
 rpl::producer<CreditsAmount> DisplayBalanceValue(

@@ -79,11 +79,19 @@ class Long:
     def __new__(cls, value=0): return int(value)
 
 class ArrayList(list):
-    def add(self, value): self.append(value); return True
+    def add(self, *args):
+        if len(args) == 1:
+            self.append(args[0])
+        elif len(args) == 2:
+            self.insert(int(args[0]), args[1])
+        else:
+            raise TypeError("ArrayList.add expects value or index, value")
+        return True
     def size(self): return len(self)
     def get(self, index): return self[index]
     def set(self, index, value):
         old=self[index]; self[index]=value; return old
+    def isEmpty(self): return not self
 
 class HashMap(dict):
     def put(self, key, value):
@@ -126,7 +134,14 @@ class TLObject:
     def __init__(self, *args, **kwargs):
         for key,value in kwargs.items(): setattr(self,key,value)
 class _TLRPC:
-    def __getattr__(self, name): return generic_class("TLRPC."+name)
+    def __init__(self):
+        self._classes = {}
+    def __getattr__(self, name):
+        value = self._classes.get(name)
+        if value is None:
+            value = generic_class("TLRPC."+name)
+            self._classes[name] = value
+        return value
 TLRPC=_TLRPC()
 
 class View:
@@ -164,7 +179,19 @@ def install_compat_modules():
     java.cast=lambda _type,value:value
     java.dynamic_proxy=lambda base: base if isinstance(base,type) else object
     java.jint=int
-    lang=_module("java.lang", {"Boolean":Boolean,"Integer":Integer,"Long":Long}, True)
+    java.jlong=int
+    java.jfloat=float
+    java.jdouble=float
+    java.jboolean=bool
+    def _jarray(component):
+        def create(value):
+            if isinstance(value, int):
+                default = False if component is bool else 0.0 if component is float else 0 if component is int else None
+                return [default for _ in range(value)]
+            return list(value)
+        return create
+    java.jarray=_jarray
+    lang=_module("java.lang", {"Boolean":Boolean,"Integer":Integer,"Long":Long}, True); lang.__path__=[]
     util=_module("java.util", {"ArrayList":ArrayList,"HashMap":HashMap}, True); util.__path__=[]
     concurrent=_module("java.util.concurrent", {"ConcurrentHashMap":ConcurrentHashMap}, True)
     android=_module("android", dynamic=True); android.__path__=[]
@@ -172,9 +199,15 @@ def install_compat_modules():
     android_view=_module("android.view", {"View":View,"WindowManager":WindowManager}, True)
     android_content=_module("android.content", dynamic=True)
     android_util=_module("android.util", dynamic=True)
-    android_text=_module("android.text", dynamic=True)
+    android_text=_module("android.text", dynamic=True); android_text.__path__=[]
+    android_text_style=_module("android.text.style", dynamic=True)
+    android_graphics=_module("android.graphics", dynamic=True); android_graphics.__path__=[]
+    android_graphics_drawable=_module("android.graphics.drawable", dynamic=True)
+    android_widget=_module("android.widget", dynamic=True)
     android_app=_module("android.app", {"Activity":generic_class("android.app.Activity")}, True)
     java_nio=_module("java.nio", {"ByteBuffer":ByteBuffer}, True)
+    java_lang_ref=_module("java.lang.ref", dynamic=True)
+    java_net=_module("java.net", dynamic=True)
     dalvik=_module("dalvik"); dalvik.__path__=[]
     dalvik_system=_module("dalvik.system", {
         "InMemoryDexClassLoader":generic_class("dalvik.system.InMemoryDexClassLoader"),
@@ -189,6 +222,7 @@ def install_compat_modules():
     tgnet=_module("org.telegram.tgnet", {"TLObject":TLObject,"TLRPC":TLRPC}, True)
     telegram_ui=_module("org.telegram.ui", dynamic=True); telegram_ui.__path__=[]
     telegram_actionbar=_module("org.telegram.ui.ActionBar", {"AlertDialog":AlertDialog}, True)
+    telegram_components=_module("org.telegram.ui.Components", dynamic=True)
     xposed_root=_module("de"); xposed_root.__path__=[]
     xposed_robv=_module("de.robv"); xposed_robv.__path__=[]
     xposed_android=_module("de.robv.android"); xposed_android.__path__=[]
@@ -199,10 +233,13 @@ def install_compat_modules():
         "java":java,"java.lang":lang,"java.util":util,"java.util.concurrent":concurrent,
         "android":android,"android.os":android_os,"android.view":android_view,
         "android.content":android_content,"android.util":android_util,"android.text":android_text,
-        "android.app":android_app,"java.nio":java_nio,
+        "android.text.style":android_text_style,"android.graphics":android_graphics,
+        "android.graphics.drawable":android_graphics_drawable,"android.widget":android_widget,
+        "android.app":android_app,"java.nio":java_nio,"java.lang.ref":java_lang_ref,"java.net":java_net,
         "dalvik":dalvik,"dalvik.system":dalvik_system,
         "org":org,"org.telegram":telegram,"org.telegram.messenger":messenger,"org.telegram.tgnet":tgnet,
         "org.telegram.ui":telegram_ui,"org.telegram.ui.ActionBar":telegram_actionbar,
+        "org.telegram.ui.Components":telegram_components,
         "de":xposed_root,"de.robv":xposed_robv,"de.robv.android":xposed_android,
         "de.robv.android.xposed":xposed,
         "com":com,"com.exteragram":exteragram,
