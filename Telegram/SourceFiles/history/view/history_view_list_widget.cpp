@@ -1535,7 +1535,8 @@ bool ListWidget::isGoodForSelection(
 	if (!applyTo.contains(item->fullId())) {
 		++totalCount;
 	}
-	return Extera::PluginManager::Instance().noForwardLimit()\n\t\t|| (totalCount <= MaxSelectedItems);
+	return Extera::PluginManager::Instance().noForwardLimit()
+	\t|| (totalCount <= MaxSelectedItems);
 }
 
 bool ListWidget::addToSelection(
@@ -2954,7 +2955,8 @@ void ListWidget::applyDragSelection(SelectedMap &applyTo) const {
 	if (_dragSelectAction == DragSelectAction::Selecting) {
 		auto already = int(applyTo.size());
 		for (const auto &itemId : _dragSelected) {
-			if (!Extera::PluginManager::Instance().noForwardLimit()\n\t\t\t\t&& applyTo.size() >= MaxSelectedItems) {
+			if (!Extera::PluginManager::Instance().noForwardLimit()
+	\t\t\t&& applyTo.size() >= MaxSelectedItems) {
 				break;
 			} else if (!applyTo.contains(itemId)) {
 				if (const auto item = session().data().message(itemId)) {
