@@ -5,14 +5,14 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
+import sys
+import types
 
 RUNTIME_DIR = Path(__file__).resolve().parent
 VENDOR_DIR = RUNTIME_DIR / "vendor"
 if VENDOR_DIR.is_dir() and str(VENDOR_DIR) not in sys.path:
     sys.path.insert(0, str(VENDOR_DIR))
-import re
-import sys
-import types
 
 from base_plugin import AppEvent, BasePlugin, HookResult, HookStrategy
 from compat import install_compat_modules
