@@ -110,6 +110,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ayu/ayu_worker.h"
 #include "ayu/utils/telegram_helpers.h"
 #include "ayu/features/forward/ayu_forward.h"
+#include "extera/plugin_manager.h"
 
 
 namespace {
@@ -4079,8 +4080,13 @@ void ApiWrap::forwardMessages(
 		}
 		ids.push_back(MTP_int(item->id));
 		randomIds.push_back(MTP_long(randomId));
+		if (Extera::PluginManager::Instance().noForwardLimit() && ids.size() >= 100) {
+			sendAccumulated();
+		}
 	}
-	sendAccumulated();
+	if (!ids.empty()) {
+		sendAccumulated();
+	}
 	_session->data().sendHistoryChangeNotifications();
 }
 

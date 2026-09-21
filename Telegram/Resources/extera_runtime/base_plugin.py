@@ -28,6 +28,21 @@ class HookResult:
     update: Any = None
     updates: Any = None
     params: Any = None
+    messages: Any = None
+
+
+class XposedHook:
+    pass
+
+
+class MethodHook(XposedHook):
+    def before_hooked_method(self, param): pass
+    def after_hooked_method(self, param): pass
+
+
+class MethodReplacement(MethodHook):
+    def replace_hooked_method(self, param):
+        return None
 
 
 class MenuItemType(Enum):
@@ -138,6 +153,20 @@ class BasePlugin:
         existed = self._send_message_hook is not None
         self._send_message_hook = None
         return existed
+
+    def hook_method(self, method, hook=None, priority=0, before=None, after=None):
+        self.log("Android method hook skipped by Desktop compatibility bridge")
+        return None
+
+    def unhook_method(self, handle):
+        return True
+
+    def hook_all_methods(self, clazz, method_name, priority=0, before=None, after=None):
+        self.log(f"Android hook_all_methods skipped on Desktop: {method_name}")
+        return []
+
+    def getText(self, key):
+        return str(key)
 
     def add_menu_item(self, data: MenuItemData):
         if not isinstance(data, MenuItemData):

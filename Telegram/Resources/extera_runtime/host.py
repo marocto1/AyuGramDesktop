@@ -10,6 +10,7 @@ import sys
 import types
 
 from base_plugin import AppEvent, BasePlugin, HookResult, HookStrategy
+from compat import install_compat_modules
 from ui.settings import Custom, Divider, EditText, Header, Input, Selector, Switch, Text
 
 
@@ -18,13 +19,17 @@ MAX_MESSAGE = 2 * 1024 * 1024
 ID_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,31}\Z")
 ANDROID_IMPORTS = ("android", "java", "javax", "org.telegram", "com.exteragram",
                    "de.robv.android.xposed", "jnius", "chaquopy")
-SDK_VERSION = "1.4.4.3-desktop.3"
+SDK_VERSION = "1.4.4.3-desktop.4"
 
-def detect_native_adapter(metadata):
-    name = str(metadata.get("name", "")).strip().casefold()
-    plugin_id = str(metadata.get("id", "")).strip().casefold().replace("-", "_")
-    if name == "unlimited pins" or plugin_id in ("unlimited_pins", "unlimitedpins"):
+def detect_native_adapter(metadata, source_text=""):
+    name=str(metadata.get("name","")).strip().casefold()
+    plugin_id=str(metadata.get("id","")).strip().casefold().replace("-","_")
+    folded=source_text.casefold()
+    if name=="unlimited pins" or plugin_id in ("unlimited_pins","unlimitedpins"):
         return "unlimited_pins"
+    signature=("tl_messages_forwardmessages" in folded and ("addtoselectedmessages" in folded or "deletemessages" in folded))
+    if name=="noforwardlimit" or plugin_id in ("zwynoforwardlimit","no_forward_limit") or signature:
+        return "no_forward_limit"
     return ""
 
 
@@ -42,7 +47,8 @@ def atomic_write(path, data):
 def inspect_source(source):
     if len(source) > MAX_SOURCE:
         raise ValueError("Plugin exceeds 1 MiB")
-    tree = ast.parse(source.decode("utf-8-sig"))
+    source_text = source.decode("utf-8-sig")
+    tree = ast.parse(source_text)
     metadata = {}
     keys = ("id", "name", "description", "author", "version", "icon", "platform",
             "desktop_api", "requirements", "app_version", "sdk_version", "min_version")
@@ -67,13 +73,20 @@ def inspect_source(source):
             imports.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom):
             imports.append(node.module or "")
-    android = sorted({name for name in imports if any(
-        name == prefix or name.startswith(prefix + ".") for prefix in ANDROID_IMPORTS
-    )})
-    native_adapter = detect_native_adapter(metadata)
-    reason = ""
-    if android and not native_adapter:
-        reason = "Android/Java runtime APIs are not available on Windows: " + ", ".join(android)
+    android=sorted({name for name in imports if any(name==prefix or name.startswith(prefix+".") for prefix in ANDROID_IMPORTS)})
+    native_adapter=detect_native_adapter(metadata, source_text)
+    heavy_prefixes=("android.widget","android.graphics","android.app","org.telegram.ui","de.robv.android.xposed","dalvik.system","jnius","chaquopy")
+    heavy=sorted({name for name in imports if any(name==prefix or name.startswith(prefix+".") for prefix in heavy_prefixes)})
+    portable_hook=("add_hook(" in source_text or "add_on_send_message_hook(" in source_text or "pre_request_hook(" in source_text or "on_send_message_hook(" in source_text)
+    method_hook_only=(("hook_method(" in source_text or "hook_all_methods(" in source_text) and not portable_hook)
+    if native_adapter:
+        compatibility="adapter"; reason=""; compat_note="Runs through a native Telegram Desktop adapter."
+    elif heavy and (method_hook_only or not portable_hook):
+        compatibility="unsupported"; reason="Requires Android UI/Xposed APIs that have no Desktop equivalent yet: "+", ".join(heavy); compat_note=reason
+    elif android:
+        compatibility="bridged"; reason=""; compat_note="Runs through the Desktop compatibility bridge; Android-only hooks are skipped."
+    else:
+        compatibility="native"; reason=""; compat_note="Desktop-compatible Python plugin."
     requirements = metadata.get("requirements", [])
     if requirements is None:
         requirements = []
@@ -82,16 +95,34 @@ def inspect_source(source):
     metadata["requirements"] = list(requirements)
     if "app_version" not in metadata and isinstance(metadata.get("min_version"), (str, int, float)):
         metadata["app_version"] = ">=" + str(metadata["min_version"])
-    metadata.update(compatible=not reason, reason=reason,
-                    desktop_native=(metadata.get("platform") == "desktop" and metadata.get("desktop_api") in (1, 2)),
+    metadata.update(compatible=(compatibility != "unsupported"), reason=reason,
+                    compatibility=compatibility, compat_note=compat_note,
+                    desktop_native=(metadata.get("platform") == "desktop" and metadata.get("desktop_api") in (1, 2, 3)),
                     native_adapter=native_adapter,
                     sdk_version_runtime=SDK_VERSION,
                     sha256=hashlib.sha256(source).hexdigest())
     return metadata
 
+class AttrDict(dict):
+    def __getattr__(self,key):
+        try: return self[key]
+        except KeyError as error: raise AttributeError(key) from error
+    def __setattr__(self,key,value): self[key]=value
+
+def to_plugin_value(value):
+    if isinstance(value,dict): return AttrDict({k:to_plugin_value(v) for k,v in value.items()})
+    if isinstance(value,list): return [to_plugin_value(v) for v in value]
+    return value
+
+def to_json_value(value):
+    if isinstance(value,dict): return {str(k):to_json_value(v) for k,v in value.items()}
+    if isinstance(value,(list,tuple)): return [to_json_value(v) for v in value]
+    if value is None or isinstance(value,(str,int,float,bool)): return value
+    return str(value)
 
 class Host:
     def __init__(self, root):
+        install_compat_modules()
         self.root = Path(root).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self.directory = self.root / "plugins"
@@ -373,7 +404,7 @@ class Host:
             event_name,
             send_message=(kind == "send_message"),
         )
-        current = copy.deepcopy(value)
+        current = to_plugin_value(copy.deepcopy(value))
         cancelled = False
         final = False
         executed = []
@@ -412,7 +443,7 @@ class Host:
                 plugin.log(f"{kind} hook failed: {exc}")
         self.save()
         return {
-            "value": current,
+            "value": to_json_value(current),
             "cancelled": cancelled,
             "final": final,
             "executed": executed,

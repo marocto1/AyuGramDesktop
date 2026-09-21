@@ -219,6 +219,7 @@ void PluginManager::applySnapshot(QJsonObject snapshot) {
 	_stars = previews.value(u"stars"_q).toString();
 	_ton = previews.value(u"ton"_q).toString();
 	_unlimitedPins = native.value(u"unlimited_pins"_q).toBool();
+	_noForwardLimit = native.value(u"no_forward_limit"_q).toBool();
 	_changes.fire({});
 }
 
@@ -231,6 +232,7 @@ void PluginManager::fail(QString error) {
 	_stars = QString();
 	_ton = QString();
 	_unlimitedPins = false;
+	_noForwardLimit = false;
 	_snapshot.insert(u"engine"_q, false);
 	_snapshot.insert(u"previews"_q, QJsonObject());
 	const auto pending = std::exchange(_pending, {});
@@ -286,6 +288,12 @@ bool PluginManager::unlimitedPins() const {
 
 rpl::producer<bool> PluginManager::unlimitedPinsValue() const {
 	return _unlimitedPins.value();
+}
+bool PluginManager::noForwardLimit() const {
+	return _noForwardLimit.current();
+}
+rpl::producer<bool> PluginManager::noForwardLimitValue() const {
+	return _noForwardLimit.value();
 }
 
 rpl::producer<CreditsAmount> DisplayBalanceValue(

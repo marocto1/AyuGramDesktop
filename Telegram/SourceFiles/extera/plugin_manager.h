@@ -31,6 +31,8 @@ public:
 	[[nodiscard]] rpl::producer<QString> previewValue(bool ton) const;
 	[[nodiscard]] bool unlimitedPins() const;
 	[[nodiscard]] rpl::producer<bool> unlimitedPinsValue() const;
+	[[nodiscard]] bool noForwardLimit() const;
+	[[nodiscard]] rpl::producer<bool> noForwardLimitValue() const;
 
 private:
 	explicit PluginManager(QObject *parent);
@@ -52,6 +54,7 @@ private:
 	rpl::variable<QString> _stars;
 	rpl::variable<QString> _ton;
 	rpl::variable<bool> _unlimitedPins = false;
+	rpl::variable<bool> _noForwardLimit = false;
 
 };
 

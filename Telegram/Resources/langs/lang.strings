@@ -9045,7 +9045,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_extera_folder" = "Open plugin folder";
 "lng_extera_refresh" = "Reconnect plugin engine";
 "lng_extera_search" = "Search plugins by name, author or ID";
-"lng_extera_incompatible" = "Incompatible with Desktop API 1";
+"lng_extera_incompatible" = "Requires a Desktop port";
 "lng_extera_pin" = "Pin plugin";
 "lng_extera_unpin" = "Unpin plugin";
 "lng_extera_remove_confirm" = "Remove this plugin and its settings? The original imported file will be kept.";

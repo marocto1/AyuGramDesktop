@@ -266,12 +266,19 @@ void ExteraPlugins::refresh() {
 		if (!description.isEmpty()) {
 			AddText(_list, description);
 		}
-		if (!compatible) {
+		const auto compatibility = plugin.value(u"compatibility"_q).toString();
+		const auto compatNote = plugin.value(u"compat_note"_q).toString();
+		if (compatibility == u"adapter"_q) {
+			AddText(_list, u"Desktop native adapter"_q);
+		} else if (compatibility == u"bridged"_q) {
+			AddText(_list, u"Desktop compatibility bridge"_q);
+		} else if (!compatible) {
 			AddText(_list, tr::lng_extera_incompatible(tr::now)
-				+ '\n' + plugin.value(u"reason"_q).toString());
+				+ (compatNote.isEmpty() ? QString() : u"\n"_q + compatNote));
 		}
-		if (!plugin.value(u"error"_q).toString().isEmpty()) {
-			AddText(_list, plugin.value(u"error"_q).toString());
+		const auto runtimeError = plugin.value(u"error"_q).toString();
+		if (!runtimeError.isEmpty() && runtimeError != plugin.value(u"reason"_q).toString()) {
+			AddText(_list, runtimeError);
 		}
 		const auto settings = _list->add(object_ptr<Ui::SettingsButton>(
 			_list, tr::lng_extera_settings(), st::settingsButton));

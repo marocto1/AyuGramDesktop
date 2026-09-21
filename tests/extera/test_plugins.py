@@ -319,6 +319,62 @@ class Plugin(BasePlugin):
         self.assertEqual(result["value"]["message"], "HELLO")
         self.assertEqual(result["executed"], ["send_hook"])
 
+    def test_no_forward_limit_semantic_adapter(self):
+        path = self.make_plugin(
+            '__id__="zwyNoForwardLimit"\n__name__="NoForwardLimit"\n'
+            'from java.lang import Integer\nfrom org.telegram.tgnet import TLRPC\n'
+            'TOKEN="TL_messages_forwardMessages"\nHOOK="addToSelectedMessages"\nDELETE="deleteMessages"\n'
+            'raise RuntimeError("android source must not execute")\n')
+        meta = inspect_source(path.read_bytes())
+        self.assertTrue(meta["compatible"])
+        self.assertEqual(meta["compatibility"], "adapter")
+        self.assertEqual(meta["native_adapter"], "no_forward_limit")
+        self.install(path)
+        self.host.dispatch(dict(op="engine", value=True))
+        result = self.host.dispatch(dict(op="enable", plugin="zwyNoForwardLimit", value=True))
+        self.assertTrue(result["snapshot"]["native"]["no_forward_limit"])
+
+    def test_java_and_tgnet_imports_use_bridge(self):
+        path = self.make_plugin('''from base_plugin import BasePlugin
+from java.lang import Boolean, Integer
+from java.util import ArrayList
+from org.telegram.tgnet import TLObject, TLRPC
+from org.telegram.messenger import LocaleController, UserConfig
+__id__="bridge_imports"
+__name__="Bridge imports"
+class Plugin(BasePlugin):
+    def on_plugin_load(self):
+        values=ArrayList(); values.add(Integer(7))
+        self.set_setting("ok", bool(Boolean(True)) and values.size()==1)
+        self.set_setting("lang", LocaleController.getInstance().getCurrentLocale().getLanguage())
+''')
+        self.assertEqual(inspect_source(path.read_bytes())["compatibility"], "bridged")
+        self.install(path)
+        self.host.dispatch(dict(op="engine", value=True))
+        self.host.dispatch(dict(op="enable", plugin="bridge_imports", value=True))
+        self.assertTrue(self.host.state["plugins"]["bridge_imports"]["settings"]["ok"])
+
+    def test_android_ui_method_hook_only_stays_unsupported(self):
+        meta = inspect_source(b'__id__="ui_only"\n__name__="UI only"\nfrom android.widget import FrameLayout\nfrom org.telegram.ui import ChatActivity\ndef hook_method(x): pass\n')
+        self.assertFalse(meta["compatible"])
+        self.assertEqual(meta["compatibility"], "unsupported")
+
+    def test_hook_params_support_attribute_access(self):
+        path = self.make_plugin('''from base_plugin import BasePlugin, HookResult, HookStrategy
+__id__="attr_hook"
+__name__="Attr Hook"
+class Plugin(BasePlugin):
+    def on_plugin_load(self): self.add_on_send_message_hook()
+    def on_send_message_hook(self, account, params):
+        params.message=params.message.upper()
+        return HookResult(strategy=HookStrategy.MODIFY, params=params)
+''')
+        self.install(path)
+        self.host.dispatch(dict(op="engine", value=True))
+        self.host.dispatch(dict(op="enable", plugin="attr_hook", value=True))
+        result=self.host.dispatch(dict(op="hook_send_message", account=0, value={"message":"hello","peer":1}))
+        self.assertEqual(result["hook"]["value"]["message"], "HELLO")
+
     def test_protocol_subprocess(self):
         requests = [dict(op="list"), dict(op="install", path=str(EXAMPLE)),
                     dict(op="engine", value=True),

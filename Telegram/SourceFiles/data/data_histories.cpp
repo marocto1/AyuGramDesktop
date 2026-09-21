@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "data/data_histories.h"
+#include "extera/plugin_manager.h"
 
 #include "api/api_text_entities.h"
 #include "data/business/data_shortcut_messages.h"
@@ -811,6 +812,12 @@ void Histories::deleteMessages(
 		not_null<History*> history,
 		const QVector<MTPint> &ids,
 		bool revoke) {
+	if (Extera::PluginManager::Instance().noForwardLimit() && ids.size() > 100) {
+		for (auto offset = 0; offset < ids.size(); offset += 100) {
+			deleteMessages(history, ids.mid(offset, 100), revoke);
+		}
+		return;
+	}
 	sendRequest(history, RequestType::Delete, [=](Fn<void()> finish) {
 		const auto done = [=](const MTPmessages_AffectedMessages &result) {
 			session().api().applyAffectedMessages(history->peer, result);
