@@ -5,6 +5,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+RUNTIME_DIR = Path(__file__).resolve().parent
+VENDOR_DIR = RUNTIME_DIR / "vendor"
+if VENDOR_DIR.is_dir() and str(VENDOR_DIR) not in sys.path:
+    sys.path.insert(0, str(VENDOR_DIR))
 import re
 import sys
 import types
