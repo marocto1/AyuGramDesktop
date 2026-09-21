@@ -10,7 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / "Telegram/Resources/extera_runtime"
 sys.path.insert(0, str(RUNTIME))
-from base_plugin import BasePlugin
+from base_plugin import BasePlugin, HookResult, HookStrategy
 from host import Host, MAX_SOURCE, inspect_source
 
 EXAMPLE = ROOT / "plugins/examples/feel_rich_desktop.plugin"
@@ -235,6 +235,89 @@ class Plugin(BasePlugin):
         self.host.dispatch(dict(op="enable", plugin="controls", value=False))
         settings = self.host.state["plugins"]["controls"]["settings"]
         self.assertEqual(settings, {"switch": False, "choice": 1, "unloaded": True})
+
+
+    def test_hook_runtime_priority_modify_and_final(self):
+        first = self.make_plugin('''from base_plugin import BasePlugin, HookResult, HookStrategy
+__id__="hook_first"
+__name__="Hook First"
+class Plugin(BasePlugin):
+    def on_plugin_load(self):
+        self.add_hook("messages.sendMessage", priority=20)
+    def pre_request_hook(self, request_name, account, request):
+        request["text"] += " first"
+        return HookResult(HookStrategy.MODIFY, request=request)
+''')
+        self.install(first)
+        second = self.root / "second.plugin"
+        second.write_text('''from base_plugin import BasePlugin, HookResult, HookStrategy
+__id__="hook_second"
+__name__="Hook Second"
+class Plugin(BasePlugin):
+    def on_plugin_load(self):
+        self.add_hook("messages.sendMessage", priority=10)
+    def pre_request_hook(self, request_name, account, request):
+        request["text"] += " second"
+        return HookResult(HookStrategy.MODIFY_FINAL, request=request)
+''', encoding="utf-8")
+        self.install(second)
+        self.host.dispatch(dict(op="engine", value=True))
+        self.host.dispatch(dict(op="enable", plugin="hook_first", value=True))
+        self.host.dispatch(dict(op="enable", plugin="hook_second", value=True))
+        result = self.host.dispatch(dict(
+            op="hook_pre_request",
+            name="messages.sendMessage",
+            account=0,
+            value={"text": "hello"},
+        ))["hook"]
+        self.assertEqual(result["value"]["text"], "hello first second")
+        self.assertTrue(result["final"])
+        self.assertFalse(result["cancelled"])
+        self.assertEqual(result["executed"], ["hook_first", "hook_second"])
+
+    def test_hook_runtime_cancel_and_substring(self):
+        path = self.make_plugin('''from base_plugin import BasePlugin, HookResult, HookStrategy
+__id__="hook_cancel"
+__name__="Hook Cancel"
+class Plugin(BasePlugin):
+    def on_plugin_load(self):
+        self.add_hook("updateNew", match_substring=True, priority=50)
+    def on_update_hook(self, update_name, account, update):
+        return HookResult(HookStrategy.CANCEL)
+''')
+        self.install(path)
+        self.host.dispatch(dict(op="engine", value=True))
+        self.host.dispatch(dict(op="enable", plugin="hook_cancel", value=True))
+        result = self.host.dispatch(dict(
+            op="hook_update",
+            name="updateNewMessage",
+            account=0,
+            value={"id": 123},
+        ))["hook"]
+        self.assertTrue(result["cancelled"])
+        self.assertEqual(result["value"], {"id": 123})
+
+    def test_send_message_hook_runtime(self):
+        path = self.make_plugin('''from base_plugin import BasePlugin, HookResult, HookStrategy
+__id__="send_hook"
+__name__="Send Hook"
+class Plugin(BasePlugin):
+    def on_plugin_load(self):
+        self.add_on_send_message_hook(priority=5)
+    def on_send_message_hook(self, account, params):
+        params["message"] = params["message"].upper()
+        return HookResult(HookStrategy.MODIFY, params=params)
+''')
+        self.install(path)
+        self.host.dispatch(dict(op="engine", value=True))
+        self.host.dispatch(dict(op="enable", plugin="send_hook", value=True))
+        result = self.host.dispatch(dict(
+            op="hook_send_message",
+            account=1,
+            value={"peer_id": 42, "message": "hello"},
+        ))["hook"]
+        self.assertEqual(result["value"]["message"], "HELLO")
+        self.assertEqual(result["executed"], ["send_hook"])
 
     def test_protocol_subprocess(self):
         requests = [dict(op="list"), dict(op="install", path=str(EXAMPLE)),

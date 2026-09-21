@@ -117,14 +117,27 @@ class BasePlugin:
     def add_hook(self, name, match_substring=False, priority=0):
         if not isinstance(name, str) or not name:
             raise ValueError("Hook name must be a non-empty string")
-        item = {"name": name, "match_substring": bool(match_substring), "priority": int(priority)}
+        priority = int(priority)
+        item = {"name": name, "match_substring": bool(match_substring), "priority": priority}
         self._hooks.append(item)
         self._hooks.sort(key=lambda x: x["priority"], reverse=True)
         return item
 
+    def remove_hook(self, handle):
+        try:
+            self._hooks.remove(handle)
+            return True
+        except ValueError:
+            return False
+
     def add_on_send_message_hook(self, priority=0):
         self._send_message_hook = int(priority)
         return self._send_message_hook
+
+    def remove_on_send_message_hook(self):
+        existed = self._send_message_hook is not None
+        self._send_message_hook = None
+        return existed
 
     def add_menu_item(self, data: MenuItemData):
         if not isinstance(data, MenuItemData):

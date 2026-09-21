@@ -9,7 +9,7 @@ import re
 import sys
 import types
 
-from base_plugin import AppEvent, BasePlugin
+from base_plugin import AppEvent, BasePlugin, HookResult, HookStrategy
 from ui.settings import Custom, Divider, EditText, Header, Input, Selector, Switch, Text
 
 
@@ -18,7 +18,7 @@ MAX_MESSAGE = 2 * 1024 * 1024
 ID_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9_-]{1,31}\Z")
 ANDROID_IMPORTS = ("android", "java", "javax", "org.telegram", "com.exteragram",
                    "de.robv.android.xposed", "jnius", "chaquopy")
-SDK_VERSION = "1.4.4.3-desktop.2"
+SDK_VERSION = "1.4.4.3-desktop.3"
 
 def detect_native_adapter(metadata):
     name = str(metadata.get("name", "")).strip().casefold()
@@ -245,7 +245,8 @@ class Host:
                     capabilities={
                         "metadata": True, "lifecycle": True, "app_events": True,
                         "settings": ["Header", "Divider", "Switch", "Selector", "Input", "Text", "EditText"],
-                        "python_requirements": False, "telegram_hooks": False,
+                        "hook_runtime": ["pre_request", "post_request", "update", "updates", "send_message"],
+                        "python_requirements": False, "telegram_hooks": "runtime_ready_native_wiring_in_progress",
                         "java_xposed": False, "custom_android_views": False,
                     })
 
@@ -311,6 +312,112 @@ class Host:
             self.save()
             raise
 
+
+    def _hook_plugins(self, event_name=None, send_message=False):
+        matches = []
+        for plugin_id, plugin in self.active.items():
+            if send_message:
+                if plugin._send_message_hook is not None:
+                    matches.append((int(plugin._send_message_hook), plugin_id, plugin))
+                continue
+            for hook in plugin._hooks:
+                name = hook["name"]
+                matched = (
+                    event_name == name
+                    or (hook["match_substring"] and name in (event_name or ""))
+                )
+                if matched:
+                    matches.append((int(hook["priority"]), plugin_id, plugin))
+        matches.sort(key=lambda item: (-item[0], item[1]))
+        return matches
+
+    def _normalize_hook_result(self, value):
+        if value is None:
+            return HookResult()
+        if isinstance(value, HookResult):
+            return value
+        if isinstance(value, dict):
+            strategy = value.get("strategy", HookStrategy.DEFAULT)
+            if isinstance(strategy, str):
+                strategy = HookStrategy(strategy)
+            if not isinstance(strategy, HookStrategy):
+                raise ValueError("Invalid hook strategy")
+            return HookResult(
+                strategy=strategy,
+                request=value.get("request"),
+                response=value.get("response"),
+                update=value.get("update"),
+                updates=value.get("updates"),
+                params=value.get("params"),
+            )
+        raise ValueError("Hook must return HookResult, dict or None")
+
+    def execute_hook(self, kind, event_name, account, value, error=None):
+        method_name = {
+            "pre_request": "pre_request_hook",
+            "post_request": "post_request_hook",
+            "update": "on_update_hook",
+            "updates": "on_updates_hook",
+            "send_message": "on_send_message_hook",
+        }.get(kind)
+        field_name = {
+            "pre_request": "request",
+            "post_request": "response",
+            "update": "update",
+            "updates": "updates",
+            "send_message": "params",
+        }.get(kind)
+        if not method_name:
+            raise ValueError("Unknown hook kind")
+        plugins = self._hook_plugins(
+            event_name,
+            send_message=(kind == "send_message"),
+        )
+        current = copy.deepcopy(value)
+        cancelled = False
+        final = False
+        executed = []
+        for _priority, plugin_id, plugin in plugins:
+            try:
+                if kind == "pre_request":
+                    raw = plugin.pre_request_hook(event_name, account, copy.deepcopy(current))
+                elif kind == "post_request":
+                    raw = plugin.post_request_hook(
+                        event_name, account, copy.deepcopy(current), copy.deepcopy(error))
+                elif kind == "update":
+                    raw = plugin.on_update_hook(event_name, account, copy.deepcopy(current))
+                elif kind == "updates":
+                    raw = plugin.on_updates_hook(event_name, account, copy.deepcopy(current))
+                else:
+                    raw = plugin.on_send_message_hook(account, copy.deepcopy(current))
+                result = self._normalize_hook_result(raw)
+                executed.append(plugin_id)
+                replacement = getattr(result, field_name)
+                if result.strategy in (HookStrategy.MODIFY, HookStrategy.MODIFY_FINAL):
+                    if replacement is None:
+                        raise ValueError(
+                            f"{result.strategy.value} requires {field_name} to be set")
+                    current = copy.deepcopy(replacement)
+                if result.strategy == HookStrategy.CANCEL:
+                    cancelled = True
+                    final = True
+                    break
+                if result.strategy == HookStrategy.MODIFY_FINAL:
+                    final = True
+                    break
+            except Exception as exc:
+                record = self.state["plugins"].get(plugin_id)
+                if record is not None:
+                    record["error"] = f"{kind} hook failed: {exc}"[:2000]
+                plugin.log(f"{kind} hook failed: {exc}")
+        self.save()
+        return {
+            "value": current,
+            "cancelled": cancelled,
+            "final": final,
+            "executed": executed,
+        }
+
     def dispatch(self, request):
         op = request.get("op")
         plugin_id = request.get("plugin")
@@ -374,6 +481,22 @@ class Host:
             elif op == "set_setting":
                 self.set_setting(plugin_id, request["key"], request["value"])
                 result["settings"] = self.settings(plugin_id)
+        elif op in ("hook_pre_request", "hook_post_request", "hook_update", "hook_updates", "hook_send_message"):
+            kind = op.removeprefix("hook_")
+            event_name = str(request.get("name", ""))
+            if kind != "send_message" and not event_name:
+                raise ValueError("Hook event name is required")
+            account = request.get("account", 0)
+            if type(account) is not int:
+                raise ValueError("Hook account must be an integer")
+            hook = self.execute_hook(
+                kind,
+                event_name,
+                account,
+                request.get("value"),
+                request.get("error"),
+            )
+            result["hook"] = hook
         elif op == "app_event":
             value = str(request.get("value", "")).lower()
             try:

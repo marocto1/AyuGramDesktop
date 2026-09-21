@@ -133,6 +133,26 @@ void PluginManager::installPluginFile(
 	}, std::move(done));
 }
 
+void PluginManager::executeHook(
+		QString kind,
+		QString name,
+		int account,
+		QJsonValue value,
+		Fn<void(QJsonObject)> done,
+		QJsonValue error) {
+	start();
+	auto command = QJsonObject{
+		{ u"op"_q, u"hook_"_q + std::move(kind) },
+		{ u"name"_q, std::move(name) },
+		{ u"account"_q, account },
+		{ u"value"_q, std::move(value) },
+	};
+	if (!error.isUndefined() && !error.isNull()) {
+		command.insert(u"error"_q, std::move(error));
+	}
+	request(std::move(command), std::move(done));
+}
+
 void PluginManager::request(QJsonObject command, Fn<void(QJsonObject)> done) {
 	if (!_ready || _pending.size() >= 32) {
 		if (done) {

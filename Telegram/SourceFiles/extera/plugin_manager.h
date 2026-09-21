@@ -5,6 +5,7 @@
 #include "rpl/variable.h"
 
 #include <QJsonObject>
+#include <QJsonValue>
 #include <QMap>
 #include <QObject>
 #include <QProcess>
@@ -19,6 +20,8 @@ public:
 	void restart();
 	void inspectPluginFile(QString path, Fn<void(QJsonObject)> done);
 	void installPluginFile(QString path, Fn<void(QJsonObject)> done);
+	void executeHook(QString kind, QString name, int account, QJsonValue value,
+		Fn<void(QJsonObject)> done, QJsonValue error = QJsonValue());
 	void request(QJsonObject command, Fn<void(QJsonObject)> done = nullptr);
 	[[nodiscard]] QJsonObject snapshot() const;
 	[[nodiscard]] QString error() const;
