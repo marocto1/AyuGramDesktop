@@ -1,3 +1,4 @@
+import copy
 import locale
 import sys
 import types
@@ -21,6 +22,16 @@ class NullProxy:
     def __index__(self): return 0
     def __str__(self): return ""
     def __repr__(self): return f"<DesktopProxy {self._name}>"
+    def __deepcopy__(self, memo):
+        cls=type(self)
+        result=cls.__new__(cls)
+        memo[id(self)]=result
+        object.__setattr__(result, "_name", object.__getattribute__(self, "_name"))
+        object.__setattr__(
+            result,
+            "_values",
+            copy.deepcopy(object.__getattribute__(self, "_values"), memo))
+        return result
     def clear(self): object.__getattribute__(self, "_values").clear()
     def size(self): return len(self)
     def get(self, key, default=None): return object.__getattribute__(self, "_values").get(key, default)
