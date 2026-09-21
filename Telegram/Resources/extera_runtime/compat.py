@@ -25,12 +25,46 @@ class NullProxy:
     def size(self): return len(self)
     def get(self, key, default=None): return object.__getattribute__(self, "_values").get(key, default)
 
+class JavaMemberProxy(NullProxy):
+    def __init__(self, name="member"):
+        super().__init__(name)
+    def setAccessible(self, value=True):
+        return None
+    def invoke(self, *args, **kwargs):
+        return None
+    def get(self, *args, **kwargs):
+        return None
+    def set(self, *args, **kwargs):
+        return None
+
+class JavaClassProxy(NullProxy):
+    TYPE=object
+    def __init__(self, name):
+        super().__init__(name)
+        self._class_name=name
+    def getClass(self):
+        return self
+    def getName(self):
+        return self._class_name
+    def getDeclaredMethod(self, name, *args):
+        return JavaMemberProxy(f"{self._class_name}.{name}")
+    def getMethod(self, name, *args):
+        return JavaMemberProxy(f"{self._class_name}.{name}")
+    def getDeclaredField(self, name):
+        return JavaMemberProxy(f"{self._class_name}.{name}")
+    def getField(self, name):
+        return JavaMemberProxy(f"{self._class_name}.{name}")
+    def newInstance(self, *args, **kwargs):
+        return NullProxy(self._class_name + ".instance")
+
 def generic_class(name):
     class Generic(NullProxy):
         TYPE=object
         def __init__(self, *args, **kwargs): super().__init__(name)
         @classmethod
-        def getInstance(cls, *args, **kwargs): return None
+        def getInstance(cls, *args, **kwargs): return cls()
+        @classmethod
+        def getClass(cls): return JavaClassProxy(name)
     Generic.__name__=name.rsplit(".",1)[-1].replace("$","_")
     return Generic
 
@@ -113,9 +147,20 @@ def _module(name, attrs=None, dynamic=False):
         module.__getattr__=__getattr__
     return module
 
+class AlertDialog(NullProxy):
+    def __init__(self, *args, **kwargs):
+        super().__init__("AlertDialog")
+    def setMessage(self, value): return self
+    def show(self): return self
+    def dismiss(self): return None
+
+class ByteBuffer(bytearray):
+    @classmethod
+    def wrap(cls, data): return cls(data)
+
 def install_compat_modules():
     java=_module("java", dynamic=True); java.__path__=[]
-    java.jclass=lambda name: generic_class(name)
+    java.jclass=lambda name: JavaClassProxy(name)
     java.cast=lambda _type,value:value
     java.dynamic_proxy=lambda base: base if isinstance(base,type) else object
     java.jint=int
@@ -128,6 +173,13 @@ def install_compat_modules():
     android_content=_module("android.content", dynamic=True)
     android_util=_module("android.util", dynamic=True)
     android_text=_module("android.text", dynamic=True)
+    android_app=_module("android.app", {"Activity":generic_class("android.app.Activity")}, True)
+    java_nio=_module("java.nio", {"ByteBuffer":ByteBuffer}, True)
+    dalvik=_module("dalvik"); dalvik.__path__=[]
+    dalvik_system=_module("dalvik.system", {
+        "InMemoryDexClassLoader":generic_class("dalvik.system.InMemoryDexClassLoader"),
+        "DexClassLoader":generic_class("dalvik.system.DexClassLoader"),
+    }, True)
     org=_module("org"); org.__path__=[]
     telegram=_module("org.telegram"); telegram.__path__=[]
     messenger=_module("org.telegram.messenger", {
@@ -135,10 +187,24 @@ def install_compat_modules():
         "MessagesController":MessagesController, "Utilities":Utilities,
     }, True)
     tgnet=_module("org.telegram.tgnet", {"TLObject":TLObject,"TLRPC":TLRPC}, True)
+    telegram_ui=_module("org.telegram.ui", dynamic=True); telegram_ui.__path__=[]
+    telegram_actionbar=_module("org.telegram.ui.ActionBar", {"AlertDialog":AlertDialog}, True)
+    xposed_root=_module("de"); xposed_root.__path__=[]
+    xposed_robv=_module("de.robv"); xposed_robv.__path__=[]
+    xposed_android=_module("de.robv.android"); xposed_android.__path__=[]
+    xposed=_module("de.robv.android.xposed", dynamic=True)
+    com=_module("com"); com.__path__=[]
+    exteragram=_module("com.exteragram", dynamic=True); exteragram.__path__=[]
     for name,module in {
         "java":java,"java.lang":lang,"java.util":util,"java.util.concurrent":concurrent,
         "android":android,"android.os":android_os,"android.view":android_view,
         "android.content":android_content,"android.util":android_util,"android.text":android_text,
+        "android.app":android_app,"java.nio":java_nio,
+        "dalvik":dalvik,"dalvik.system":dalvik_system,
         "org":org,"org.telegram":telegram,"org.telegram.messenger":messenger,"org.telegram.tgnet":tgnet,
+        "org.telegram.ui":telegram_ui,"org.telegram.ui.ActionBar":telegram_actionbar,
+        "de":xposed_root,"de.robv":xposed_robv,"de.robv.android":xposed_android,
+        "de.robv.android.xposed":xposed,
+        "com":com,"com.exteragram":exteragram,
     }.items():
         sys.modules.setdefault(name,module)
