@@ -82,23 +82,23 @@ dialogsRipple: RippleAnimation(defaultRippleAnimation) {
 	color: dialogsRippleBg;
 }
 
-dialogsTextFont: normalFont;
+dialogsTextFont: font(15px);
 dialogsTextStyle: defaultTextStyle;
-dialogsDateFont: font(13px);
+dialogsDateFont: font(12px);
 dialogsDateSkip: 5px;
 
-dialogsRowHeight: 62px;
-dialogsFilterPadding: point(7px, 7px);
-dialogsFilterSkip: 4px;
+dialogsRowHeight: 76px;
+dialogsFilterPadding: point(12px, 12px);
+dialogsFilterSkip: 8px;
 
 defaultDialogRow: DialogRow {
 	height: dialogsRowHeight;
-	padding: margins(10px, 8px, 10px, 8px);
-	photoSize: 46px;
-	nameLeft: 68px;
-	nameTop: 10px;
-	textLeft: 68px;
-	textTop: 34px;
+	padding: margins(16px, 11px, 16px, 11px);
+	photoSize: 54px;
+	nameLeft: 84px;
+	nameTop: 13px;
+	textLeft: 84px;
+	textTop: 42px;
 }
 communityRequestableListItem: PeerListItem(defaultPeerListItem) {
 	height: dialogsRowHeight;            // == st::defaultDialogRow.height (62px)
@@ -111,20 +111,20 @@ communityRequestableList: PeerList(defaultPeerList) {
 	item: communityRequestableListItem;
 }
 taggedDialogRow: DialogRow(defaultDialogRow) {
-	height: 72px;
-	textTop: 30px;
-	tagTop: 52px;
+	height: 88px;
+	textTop: 36px;
+	tagTop: 62px;
 }
 forumDialogRow: DialogRow(defaultDialogRow) {
-	height: 80px;
-	textTop: 32px;
+	height: 94px;
+	textTop: 38px;
 	topicsSkip: 8px;
 	topicsSkipBig: 14px;
 	topicsHeight: 21px;
 }
 taggedForumDialogRow: DialogRow(forumDialogRow) {
-	height: 96px;
-	tagTop: 77px;
+	height: 110px;
+	tagTop: 86px;
 }
 communityInfoDialogRow: DialogRow(defaultDialogRow) {
 	padding: margins(22px, 8px, 18px, 8px);
@@ -278,15 +278,15 @@ dialogEmptyButtonLabel: FlatLabel(defaultFlatLabel) {
 }
 
 dialogsMenuToggle: IconButton {
-	width: 40px;
-	height: 40px;
+	width: 46px;
+	height: 46px;
 
 	icon: icon {{ "dialogs/dialogs_menu", dialogsMenuIconFg }};
 	iconOver: icon {{ "dialogs/dialogs_menu", dialogsMenuIconFgOver }};
-	iconPosition: point(-1px, -1px);
+	iconPosition: point(2px, 2px);
 
-	rippleAreaPosition: point(0px, 0px);
-	rippleAreaSize: 40px;
+	rippleAreaPosition: point(1px, 1px);
+	rippleAreaSize: 44px;
 	ripple: defaultRippleAnimationBgOver;
 }
 
@@ -307,12 +307,12 @@ dialogsSearchFrom: IconButton(dialogsCalendar) {
 dialogsFilter: InputField(defaultInputField) {
 	textBg: filterInputInactiveBg;
 	textBgActive: filterInputActiveBg;
-	textMargins: margins(12px, 8px, 30px, 5px);
+	textMargins: margins(16px, 11px, 38px, 8px);
 
 	placeholderFg: placeholderFg;
 	placeholderFgActive: placeholderFgActive;
 	placeholderFgError: placeholderFgActive;
-	placeholderMargins: margins(5px, 0px, 2px, 0px);
+	placeholderMargins: margins(9px, 1px, 4px, 0px);
 	placeholderScale: 0.;
 	placeholderShift: -50px;
 	placeholderFont: normalFont;
@@ -321,14 +321,14 @@ dialogsFilter: InputField(defaultInputField) {
 	borderFgActive: windowBgRipple;
 	borderFgError: activeLineFgError;
 
-	border: 3px;
+	border: 2px;
 	borderActive: 2px;
-	borderRadius: 18px;
+	borderRadius: 22px;
 	borderDenominator: 2;
 
 	style: defaultTextStyle;
 
-	heightMin: 35px;
+	heightMin: 44px;
 }
 dialogsCancelSearchInPeer: IconButton(dialogsMenuToggle) {
 	icon: icon {{ "dialogs/dialogs_cancel_search", dialogsMenuIconFg }};

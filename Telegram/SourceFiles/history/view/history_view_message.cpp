@@ -6417,29 +6417,17 @@ QRect Message::countGeometry() const {
 Ui::BubbleRounding Message::countMessageRounding() const {
 	const auto smallTop = isBubbleAttachedToPrevious();
 	const auto smallBottom = isBubbleAttachedToNext();
-	const auto media = smallBottom ? nullptr : this->media();
-	const auto item = data();
-	const auto keyboard = item->inlineReplyKeyboard();
-	const auto skipTail = smallBottom
-		|| (media && media->skipBubbleTail())
-		|| (keyboard != nullptr)
-		|| item->isFakeAboutView()
-		|| isCommentsRootView();
 	const auto right = hasRightLayout();
 	using Corner = Ui::BubbleCornerRounding;
 	return Ui::BubbleRounding{
 		.topLeft = (smallTop && !right) ? Corner::Small : Corner::Large,
 		.topRight = (smallTop && right) ? Corner::Small : Corner::Large,
-		.bottomLeft = ((smallBottom && !right)
+		.bottomLeft = (smallBottom && !right)
 			? Corner::Small
-			: (!skipTail && !right)
-			? Corner::Tail
-			: Corner::Large),
-		.bottomRight = ((smallBottom && right)
+			: Corner::Large,
+		.bottomRight = (smallBottom && right)
 			? Corner::Small
-			: (!skipTail && right)
-			? Corner::Tail
-			: Corner::Large),
+			: Corner::Large,
 	};
 }
 

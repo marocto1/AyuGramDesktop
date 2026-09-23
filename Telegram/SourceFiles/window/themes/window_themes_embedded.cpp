@@ -215,7 +215,7 @@ style::colorizer ColorizerForTheme(const QString &absolutePath) {
 	if (const auto accent = AyuFeatures::MessageShot::isChoosingTheme() ? AyuFeatures::MessageShot::getSelectedColorFromDefault() : colors.get(i->type)) {
 		return ColorizerFrom(*i, *accent);
 	}
-	return {};
+	return ColorizerFrom(*i, style::ColorFromHex("8b5cf6"));
 }
 
 void Colorize(EmbeddedScheme &scheme, const style::colorizer &colorizer) {
@@ -265,11 +265,11 @@ std::vector<EmbeddedScheme> EmbeddedThemes() {
 		},
 		EmbeddedScheme{
 			EmbeddedType::Night,
-			qColor("485761"),
-			qColor("5ca7d4"),
-			qColor("6b808d"),
-			qColor("6b808d"),
-			qColor("5ca7d4"),
+			qColor("1b1924"),
+			qColor("3d3155"),
+			qColor("2a2734"),
+			qColor("8b5cf6"),
+			qColor("4a4558"),
 			name(tr::lng_settings_theme_tinted),
 			":/gui/night.tdesktop-theme",
 			qColor("5288c1")
@@ -317,14 +317,14 @@ std::vector<QColor> DefaultAccentColors(EmbeddedType type) {
 		};
 	case EmbeddedType::Night:
 		return {
-			qColor("58bfe8"),
-			qColor("466f42"),
-			qColor("aa6084"),
-			qColor("a46d3c"),
-			qColor("917bbd"),
-			qColor("ab5149"),
-			qColor("697b97"),
-			qColor("9b834b"),
+			qColor("8b5cf6"),
+			qColor("a855f7"),
+			qColor("ec4899"),
+			qColor("f59e0b"),
+			qColor("22d3ee"),
+			qColor("34d399"),
+			qColor("94a3b8"),
+			qColor("fb7185"),
 		};
 	case EmbeddedType::NightGreen:
 		return {

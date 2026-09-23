@@ -12,8 +12,8 @@ using "boxes/boxes.style";
 
 settingsButton: SettingsButton(infoProfileButton) {
 	style: boxTextStyle;
-	padding: margins(60px, 10px, 22px, 10px);
-	iconLeft: 20px;
+	padding: margins(72px, 13px, 28px, 13px);
+	iconLeft: 24px;
 }
 settingsButtonRightLabelSpoiler: SettingsButton(settingsButton) {
 	rightLabel: FlatLabel(defaultSettingsRightLabel) {
@@ -23,7 +23,7 @@ settingsButtonRightLabelSpoiler: SettingsButton(settingsButton) {
 	}
 }
 settingsButtonNoIcon: SettingsButton(settingsButton) {
-	padding: margins(22px, 10px, 22px, 8px);
+	padding: margins(28px, 13px, 28px, 11px);
 }
 settingsButtonLight: SettingsButton(settingsButton) {
 	textFg: lightButtonFg;
@@ -160,8 +160,8 @@ settingsCheckboxPadding: margins(22px, 10px, 10px, 10px);
 settingsLink: boxLinkButton;
 settingsCheckboxesSkip: 12px;
 
-settingsNavigationMargin: 60px;
-settingsNavigationBandSkip: 4px;
+settingsNavigationMargin: 72px;
+settingsNavigationBandSkip: 8px;
 
 settingsSendType: settingsCheckbox;
 settingsSendTypePadding: margins(22px, 5px, 10px, 5px);
@@ -196,8 +196,8 @@ settingLocalPasscodeDescriptionBottomSkip: 15px;
 settingLocalPasscodeIconPadding: margins(0px, 19px, 0px, 5px);
 settingLocalPasscodeButtonPadding: margins(0px, 19px, 0px, 35px);
 
-settingsInfoPhotoHeight: 162px;
-settingsInfoPhotoSize: 100px;
+settingsInfoPhotoHeight: 188px;
+settingsInfoPhotoSize: 112px;
 settingsInfoPhoto: UserpicButton(defaultUserpicButton) {
 	size: size(settingsInfoPhotoSize, settingsInfoPhotoSize);
 	photoSize: settingsInfoPhotoSize;

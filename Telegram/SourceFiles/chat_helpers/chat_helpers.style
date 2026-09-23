@@ -1238,16 +1238,16 @@ historyTextStyle: TextStyle(defaultTextStyle) {
 }
 historyComposeField: InputField(defaultInputField) {
 	style: historyTextStyle;
-	textMargins: margins(0px, 0px, 0px, 0px);
+	textMargins: margins(8px, 2px, 8px, 2px);
 	textAlign: align(left);
 	textFg: historyComposeAreaFg;
 	textBg: historyComposeAreaBg;
-	heightMin: 36px;
-	heightMax: 72px;
+	heightMin: 42px;
+	heightMax: 84px;
 	placeholderFg: placeholderFg;
 	placeholderFgActive: placeholderFgActive;
 	placeholderFgError: placeholderFgActive;
-	placeholderMargins: margins(2px, 0px, 2px, 0px);
+	placeholderMargins: margins(10px, 2px, 8px, 0px);
 	placeholderAlign: align(topleft);
 	placeholderScale: 0.;
 	placeholderFont: normalFont;
@@ -1258,19 +1258,19 @@ historyComposeField: InputField(defaultInputField) {
 }
 historyComposeFieldMaxHeight: 224px;
 historyComposeFieldFadeHeight: 6px;
-historySendRight: 2px;
-historySendPadding: 9px;
+historySendRight: 10px;
+historySendPadding: 12px;
 // historyMinHeight: 56px;
 
 historyAttach: IconButton(defaultIconButton) {
-	width: 44px;
-	height: 46px;
+	width: 48px;
+	height: 48px;
 
 	icon: icon {{ "chat/input_attach", historyComposeIconFg }};
 	iconOver: icon {{ "chat/input_attach", historyComposeIconFgOver }};
 
-	rippleAreaPosition: point(2px, 3px);
-	rippleAreaSize: 40px;
+	rippleAreaPosition: point(2px, 2px);
+	rippleAreaSize: 44px;
 	ripple: defaultRippleAnimationBgOver;
 }
 
@@ -1360,7 +1360,7 @@ boxAttachEmojiTop: 20px;
 
 historySendIcon: icon {{ "chat/input_send", historySendIconFg }};
 historySendIconOver: icon {{ "chat/input_send", historySendIconFgOver }};
-historySendSize: size(44px, 46px);
+historySendSize: size(48px, 48px);
 historyScheduleIcon: icon {{ "chat/input_schedule", historyComposeAreaBg }};
 historyScheduleIconPosition: point(7px, 8px);
 historyEditSaveIcon: icon {{ "chat/input_save", historySendIconFg }};
@@ -1581,7 +1581,7 @@ defaultChooseSendAs: ChooseSendAs {
 }
 defaultComposeControls: ComposeControls {
 	bg: historyComposeAreaBg;
-	radius: 0px;
+	radius: 24px;
 	padding: margins(historySendRight, historySendPadding, historySendRight, historySendPadding);
 
 	field: historyComposeField;
