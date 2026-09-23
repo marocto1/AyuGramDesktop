@@ -11,7 +11,7 @@ using "ui/widgets/widgets.style";
 using "ui/menu_icons.style";
 using "chat_helpers/chat_helpers.style"; // GroupCallUserpics
 
-msgMaxWidth: 430px;
+msgMaxWidth: 520px;
 msgFont: font(fsize);
 msgNameFont: semiboldFont;
 msgNameStyle: semiboldTextStyle;
@@ -20,10 +20,10 @@ msgServiceNameFont: semiboldFont;
 msgServicePhotoWidth: 100px;
 msgServiceUserpicSuggestionPhotoWidth: 100px;
 msgDateFont: font(13px);
-msgMinWidth: 160px;
+msgMinWidth: 190px;
 msgPhotoSize: 33px;
 msgPhotoSkip: 40px;
-msgPadding: margins(12px, 9px, 12px, 9px);
+msgPadding: margins(14px, 10px, 14px, 10px);
 msgTagBadgePadding: margins(5px, -1px, 5px, 0px);
 msgTagBadgeBoostSkip: 2px;
 
@@ -50,9 +50,9 @@ tagInfoAdminsOnlyLabel: FlatLabel(defaultFlatLabel) {
 	}
 }
 
-msgMargin: margins(20px, 7px, 64px, 3px);
+msgMargin: margins(24px, 8px, 72px, 4px);
 msgMarginTopAttached: 0px;
-msgShadow: 2px;
+msgShadow: 0px;
 msgSelectionOffset: 30px;
 msgSelectionBottomSkip: 5px;
 
@@ -197,7 +197,7 @@ historyScroll: ScrollArea(defaultScrollArea) {
 
 historyResizeWidth: 6px;
 
-historyPaddingBottom: 8px;
+historyPaddingBottom: 14px;
 
 historyPremiumToast: Toast(defaultToast) {
 	minWidth: msgMinWidth;
@@ -316,8 +316,8 @@ historyInfoToast: Toast(defaultToast) {
 }
 historyInfoToastIcon: icon {{ "toast/info", toastFg }};
 
-bubbleRadiusSmall: 7px;
-bubbleRadiusLarge: 14px;
+bubbleRadiusSmall: 10px;
+bubbleRadiusLarge: 22px;
 
 historyPhotoLeft: 18px;
 historyPhotoBubbleMinWidth: 200px;
@@ -343,8 +343,8 @@ historyStatusFg: windowSubTextFg;
 historyStatusFgActive: windowActiveTextFg;
 historyStatusFgTyping: historyStatusFgActive;
 
-historyUnreadBarHeight: 30px;
-historyUnreadBarMargin: 5px;
+historyUnreadBarHeight: 38px;
+historyUnreadBarMargin: 6px;
 historyUnreadBarFont: semiboldFont;
 
 historyForwardChooseMargins: margins(30px, 10px, 30px, 10px);
