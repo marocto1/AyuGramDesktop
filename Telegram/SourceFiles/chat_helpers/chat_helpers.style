@@ -992,9 +992,9 @@ historyComposeButton: FlatButton {
 	overBgColor: historyComposeButtonBgOver;
 
 	width: -32px;
-	height: 46px;
+	height: 48px;
 
-	textTop: 14px;
+	textTop: 15px;
 
 	font: semiboldFont;
 	overFont: semiboldFont;
@@ -1004,8 +1004,8 @@ historyComposeButton: FlatButton {
 	}
 }
 historyGiftToChannel: IconButton(defaultIconButton) {
-	width: 46px;
-	height: 46px;
+	width: 48px;
+	height: 48px;
 
 	icon: icon{{ "menu/gift_premium", windowActiveTextFg }};
 	iconOver: icon{{ "menu/gift_premium", windowActiveTextFg }};
@@ -1238,12 +1238,12 @@ historyTextStyle: TextStyle(defaultTextStyle) {
 }
 historyComposeField: InputField(defaultInputField) {
 	style: historyTextStyle;
-	textMargins: margins(0px, 0px, 0px, 0px);
+	textMargins: margins(2px, 2px, 2px, 2px);
 	textAlign: align(left);
 	textFg: historyComposeAreaFg;
 	textBg: historyComposeAreaBg;
-	heightMin: 36px;
-	heightMax: 72px;
+	heightMin: 40px;
+	heightMax: 96px;
 	placeholderFg: placeholderFg;
 	placeholderFgActive: placeholderFgActive;
 	placeholderFgError: placeholderFgActive;
@@ -1258,13 +1258,13 @@ historyComposeField: InputField(defaultInputField) {
 }
 historyComposeFieldMaxHeight: 224px;
 historyComposeFieldFadeHeight: 6px;
-historySendRight: 2px;
-historySendPadding: 9px;
+historySendRight: 4px;
+historySendPadding: 8px;
 // historyMinHeight: 56px;
 
 historyAttach: IconButton(defaultIconButton) {
-	width: 44px;
-	height: 46px;
+	width: 48px;
+	height: 48px;
 
 	icon: icon {{ "chat/input_attach", historyComposeIconFg }};
 	iconOver: icon {{ "chat/input_attach", historyComposeIconFgOver }};

@@ -23,7 +23,7 @@ msgDateFont: font(13px);
 msgMinWidth: 160px;
 msgPhotoSize: 33px;
 msgPhotoSkip: 40px;
-msgPadding: margins(11px, 8px, 11px, 8px);
+msgPadding: margins(12px, 9px, 12px, 9px);
 msgTagBadgePadding: margins(5px, -1px, 5px, 0px);
 msgTagBadgeBoostSkip: 2px;
 
@@ -50,7 +50,7 @@ tagInfoAdminsOnlyLabel: FlatLabel(defaultFlatLabel) {
 	}
 }
 
-msgMargin: margins(16px, 6px, 56px, 2px);
+msgMargin: margins(20px, 7px, 64px, 3px);
 msgMarginTopAttached: 0px;
 msgShadow: 2px;
 msgSelectionOffset: 30px;
@@ -63,9 +63,9 @@ middleClickAutoscrollMaxSpeed: 7200px;
 
 historyReplyTop: 2px;
 historyReplyBottom: 2px;
-historyReplyPreview: 32px;
-historyReplyPreviewMargin: margins(7px, 4px, 4px, 4px);
-historyReplyPadding: margins(11px, 2px, 6px, 2px);
+historyReplyPreview: 34px;
+historyReplyPreviewMargin: margins(8px, 5px, 5px, 5px);
+historyReplyPadding: margins(12px, 3px, 8px, 3px);
 historyReplyUser: IconEmoji {
 	icon: icon {{ "chat/reply_type_user", windowFg }};
 	padding: margins(0px, 4px, 4px, 0px);
@@ -83,12 +83,12 @@ historyReplyForward: IconEmoji {
 	padding: margins(0px, 2px, 2px, 0px);
 }
 
-msgReplyPadding: margins(6px, 6px, 11px, 6px);
+msgReplyPadding: margins(7px, 7px, 12px, 7px);
 msgReplyBarPos: point(1px, 0px);
 msgReplyBarSize: size(2px, 36px);
 msgReplyBarSkip: 10px;
-msgServicePadding: margins(12px, 3px, 12px, 4px);
-msgServiceMargin: margins(10px, 10px, 10px, 2px);
+msgServicePadding: margins(10px, 4px, 10px, 5px);
+msgServiceMargin: margins(12px, 12px, 12px, 4px);
 monoforumBarUserpicSkip: 2px;
 
 msgDateSpace: 12px;
@@ -316,10 +316,10 @@ historyInfoToast: Toast(defaultToast) {
 }
 historyInfoToastIcon: icon {{ "toast/info", toastFg }};
 
-bubbleRadiusSmall: roundRadiusLarge;
-bubbleRadiusLarge: 16px;
+bubbleRadiusSmall: 7px;
+bubbleRadiusLarge: 14px;
 
-historyPhotoLeft: 14px;
+historyPhotoLeft: 18px;
 historyPhotoBubbleMinWidth: 200px;
 
 historyPeerUserpicFont: semiboldFont;
@@ -343,8 +343,8 @@ historyStatusFg: windowSubTextFg;
 historyStatusFgActive: windowActiveTextFg;
 historyStatusFgTyping: historyStatusFgActive;
 
-historyUnreadBarHeight: 32px;
-historyUnreadBarMargin: 3px;
+historyUnreadBarHeight: 30px;
+historyUnreadBarMargin: 5px;
 historyUnreadBarFont: semiboldFont;
 
 historyForwardChooseMargins: margins(30px, 10px, 30px, 10px);
@@ -369,7 +369,7 @@ HistoryFileLayout {
 }
 
 msgFileThumbRadiusSmall: 4px;
-msgFileThumbRadiusLarge: 12px;
+msgFileThumbRadiusLarge: 10px;
 msgFileLayout: HistoryFileLayout {
 	padding: margins(12px, 8px, 10px, 8px);
 	nameTop: 12px;
@@ -529,8 +529,8 @@ historyChecklistTaskPadding: margins(32px, 12px, 0px, 12px);
 historyChecklistCheckedTop: 4px;
 historyChecklistBottomTop: -4px;
 
-historyViewButtonHeight: 48px;
-historyViewButtonMargins: margins(10px, 5px, 10px, 10px);
+historyViewButtonHeight: 44px;
+historyViewButtonMargins: margins(12px, 6px, 12px, 10px);
 historyViewButtonTextStyle: semiboldTextStyle;
 
 historyPageButtonLine: 1px;

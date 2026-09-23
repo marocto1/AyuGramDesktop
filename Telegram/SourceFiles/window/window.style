@@ -12,18 +12,18 @@ using "boxes/boxes.style"; // UserpicButton
 
 windowMinWidth: 380px;
 windowMinHeight: 480px;
-windowDefaultWidth: 800px;
-windowDefaultHeight: 600px;
-windowBigDefaultWidth: 1024px;
-windowBigDefaultHeight: 768px;
+windowDefaultWidth: 960px;
+windowDefaultHeight: 680px;
+windowBigDefaultWidth: 1180px;
+windowBigDefaultHeight: 780px;
 
-columnMinimalWidthLeft: 260px;
-columnMaximalWidthLeft: 540px;
-columnMinimalWidthMain: 380px;
-columnMinimalWidthThird: 292px;
-columnMaximalWidthThird: 392px;
+columnMinimalWidthLeft: 300px;
+columnMaximalWidthLeft: 520px;
+columnMinimalWidthMain: 420px;
+columnMinimalWidthThird: 320px;
+columnMaximalWidthThird: 420px;
 
-adaptiveChatWideWidth: 880px;
+adaptiveChatWideWidth: 980px;
 
 notifyBorder: windowShadowFgFallback;
 notifyBorderWidth: 1px;
@@ -85,12 +85,12 @@ notifyFadeRight: icon {{ "fade_horizontal", notificationBg }};
 titleUnreadCounterTop: 6px;
 
 mainMenuUserpic: UserpicButton(defaultUserpicButton) {
-	size: size(48px, 48px);
-	photoSize: 48px;
+	size: size(44px, 44px);
+	photoSize: 44px;
 }
 mainMenuButton: SettingsButton(defaultSettingsButton) {
 	style: semiboldTextStyle;
-	padding: margins(61px, 11px, 20px, 9px);
+	padding: margins(60px, 12px, 24px, 12px);
 	toggleSkip: 19px;
 	iconLeft: 21px;
 }

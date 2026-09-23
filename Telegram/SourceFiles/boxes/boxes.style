@@ -42,10 +42,10 @@ aboutRevokePublicLabel: FlatLabel(defaultFlatLabel) {
 	minWidth: 320px;
 }
 
-contactsPhotoSize: 42px;
-contactsPadding: margins(16px, 7px, 16px, 7px);
-contactsNameTop: 2px;
-contactsStatusTop: 23px;
+contactsPhotoSize: 44px;
+contactsPadding: margins(18px, 8px, 18px, 8px);
+contactsNameTop: 3px;
+contactsStatusTop: 25px;
 contactsStatusFont: font(fsize);
 contactsCheckPosition: point(8px, 16px);
 
@@ -71,11 +71,11 @@ membersMarginTop: 10px;
 membersMarginBottom: 10px;
 
 peerListBoxItem: PeerListItem(defaultPeerListItem) {
-	height: 56px;
+	height: 60px;
 	photoSize: contactsPhotoSize;
-	photoPosition: point(16px, 7px);
-	namePosition: point(74px, 9px);
-	statusPosition: point(74px, 30px);
+	photoPosition: point(18px, 8px);
+	namePosition: point(80px, 11px);
+	statusPosition: point(80px, 33px);
 	button: OutlineButton(defaultPeerListButton) {
 		textBg: contactsBg;
 		textBgOver: contactsBgOver;
@@ -109,8 +109,8 @@ localStorageRowSize: FlatLabel(defaultFlatLabel) {
 	}
 }
 
-localStorageIslandMargin: margins(12px, 10px, 12px, 0px);
-localStorageIslandRadius: 12px;
+localStorageIslandMargin: margins(14px, 10px, 14px, 0px);
+localStorageIslandRadius: 10px;
 
 shareBoxListItem: PeerListItem(defaultPeerListItem) {
 	nameStyle: TextStyle(defaultTextStyle) {
@@ -145,7 +145,7 @@ themeWarningWidth: boxWideWidth;
 themeWarningHeight: 150px;
 themeWarningTextTop: 60px;
 
-aboutWidth: 390px;
+aboutWidth: 420px;
 aboutVersionLink: LinkButton(defaultLinkButton) {
 	color: windowSubTextFg;
 	overColor: windowSubTextFg;

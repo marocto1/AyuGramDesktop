@@ -12,7 +12,8 @@ using "boxes/boxes.style";
 
 settingsButton: SettingsButton(infoProfileButton) {
 	style: boxTextStyle;
-	padding: margins(60px, 10px, 22px, 10px);
+	height: 48px;
+	padding: margins(64px, 12px, 24px, 12px);
 	iconLeft: 20px;
 }
 settingsButtonRightLabelSpoiler: SettingsButton(settingsButton) {
@@ -23,7 +24,7 @@ settingsButtonRightLabelSpoiler: SettingsButton(settingsButton) {
 	}
 }
 settingsButtonNoIcon: SettingsButton(settingsButton) {
-	padding: margins(22px, 10px, 22px, 8px);
+	padding: margins(24px, 12px, 24px, 12px);
 }
 settingsButtonLight: SettingsButton(settingsButton) {
 	textFg: lightButtonFg;
@@ -87,8 +88,8 @@ settingsScaleLabel: FlatLabel(defaultFlatLabel) {
 	textFg: windowActiveTextFg;
 }
 settingsUpdateToggle: SettingsButton(settingsButtonNoIcon) {
-	height: 40px;
-	padding: margins(22px, 8px, 22px, 8px);
+	height: 44px;
+	padding: margins(24px, 10px, 24px, 10px);
 }
 settingsUpdateState: FlatLabel(defaultFlatLabel) {
 	textFg: windowSubTextFg;
@@ -156,11 +157,11 @@ settingsFolderShareIcon: icon {{ "settings/folder_links", lightButtonFg }};
 settingsCheckbox: Checkbox(defaultBoxCheckbox) {
 	textPosition: point(15px, 1px);
 }
-settingsCheckboxPadding: margins(22px, 10px, 10px, 10px);
+settingsCheckboxPadding: margins(24px, 12px, 12px, 12px);
 settingsLink: boxLinkButton;
 settingsCheckboxesSkip: 12px;
 
-settingsNavigationMargin: 60px;
+settingsNavigationMargin: 56px;
 settingsNavigationBandSkip: 4px;
 
 settingsSendType: settingsCheckbox;
@@ -425,7 +426,7 @@ settingsUsernameLeft: settingsNameLeft;
 settingsUsernameTop: 58px;
 settingsPeerToPeerSkip: 9px;
 
-settingsIconRadius: 6px;
+settingsIconRadius: 8px;
 
 settingsReactionRightIcon: 20px;
 settingsReactionsIslandPadding: margins(12px, 12px, 12px, 4px);
@@ -513,16 +514,16 @@ settingsBlockedList: PeerList(peerListBox) {
 settingsBlockedHeightMin: 240px;
 
 settingsNotificationType: SettingsButton(settingsButton) {
-	height: 40px;
-	padding: margins(60px, 4px, 22px, 4px);
+	height: 44px;
+	padding: margins(64px, 6px, 24px, 6px);
 }
 settingsNotificationTypeDetails: FlatLabel(defaultFlatLabel) {
 	textFg: windowSubTextFg;
 }
 
 settingsSearchResult: SettingsButton(settingsButton) {
-	height: 40px;
-	padding: margins(60px, 4px, 22px, 4px);
+	height: 44px;
+	padding: margins(64px, 6px, 24px, 6px);
 }
 settingsSearchResultNoIcon: SettingsButton(settingsSearchResult) {
 	padding: margins(22px, 4px, 22px, 4px);
