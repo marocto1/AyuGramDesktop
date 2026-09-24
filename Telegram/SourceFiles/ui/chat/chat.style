@@ -11,7 +11,7 @@ using "ui/widgets/widgets.style";
 using "ui/menu_icons.style";
 using "chat_helpers/chat_helpers.style"; // GroupCallUserpics
 
-msgMaxWidth: 520px;
+msgMaxWidth: 600px;
 msgFont: font(fsize);
 msgNameFont: semiboldFont;
 msgNameStyle: semiboldTextStyle;
@@ -317,7 +317,7 @@ historyInfoToast: Toast(defaultToast) {
 historyInfoToastIcon: icon {{ "toast/info", toastFg }};
 
 bubbleRadiusSmall: 10px;
-bubbleRadiusLarge: 22px;
+bubbleRadiusLarge: 26px;
 
 historyPhotoLeft: 18px;
 historyPhotoBubbleMinWidth: 200px;
