@@ -87,44 +87,47 @@ dialogsTextStyle: defaultTextStyle;
 dialogsDateFont: font(12px);
 dialogsDateSkip: 5px;
 
-dialogsRowHeight: 76px;
+dialogsRowHeight: 96px;
+dialogsCardInset: 8px;
+dialogsCardGap: 4px;
+dialogsCardRadius: 20px;
 dialogsFilterPadding: point(12px, 12px);
 dialogsFilterSkip: 8px;
 
 defaultDialogRow: DialogRow {
 	height: dialogsRowHeight;
-	padding: margins(16px, 11px, 16px, 11px);
-	photoSize: 54px;
-	nameLeft: 84px;
-	nameTop: 13px;
-	textLeft: 84px;
-	textTop: 42px;
+	padding: margins(24px, 17px, 20px, 17px);
+	photoSize: 62px;
+	nameLeft: 100px;
+	nameTop: 23px;
+	textLeft: 100px;
+	textTop: 53px;
 }
 communityRequestableListItem: PeerListItem(defaultPeerListItem) {
 	height: dialogsRowHeight;
-	photoSize: 54px;
-	photoPosition: point(16px, 11px);
-	namePosition: point(84px, 13px);
-	statusPosition: point(84px, 42px);
+	photoSize: 62px;
+	photoPosition: point(24px, 17px);
+	namePosition: point(100px, 23px);
+	statusPosition: point(100px, 53px);
 }
 communityRequestableList: PeerList(defaultPeerList) {
 	item: communityRequestableListItem;
 }
 taggedDialogRow: DialogRow(defaultDialogRow) {
-	height: 88px;
-	textTop: 36px;
-	tagTop: 62px;
+	height: 108px;
+	textTop: 44px;
+	tagTop: 76px;
 }
 forumDialogRow: DialogRow(defaultDialogRow) {
-	height: 94px;
-	textTop: 38px;
+	height: 114px;
+	textTop: 46px;
 	topicsSkip: 8px;
 	topicsSkipBig: 14px;
 	topicsHeight: 21px;
 }
 taggedForumDialogRow: DialogRow(forumDialogRow) {
-	height: 110px;
-	tagTop: 86px;
+	height: 130px;
+	tagTop: 102px;
 }
 communityInfoDialogRow: DialogRow(defaultDialogRow) {
 	padding: margins(22px, 8px, 18px, 8px);

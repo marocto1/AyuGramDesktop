@@ -12,12 +12,12 @@ using "boxes/boxes.style"; // UserpicButton
 
 windowMinWidth: 380px;
 windowMinHeight: 480px;
-windowDefaultWidth: 1180px;
-windowDefaultHeight: 760px;
-windowBigDefaultWidth: 1360px;
-windowBigDefaultHeight: 860px;
+windowDefaultWidth: 1320px;
+windowDefaultHeight: 820px;
+windowBigDefaultWidth: 1500px;
+windowBigDefaultHeight: 900px;
 
-columnMinimalWidthLeft: 330px;
+columnMinimalWidthLeft: 380px;
 columnMaximalWidthLeft: 620px;
 columnMinimalWidthMain: 520px;
 columnMinimalWidthThird: 320px;
@@ -205,7 +205,7 @@ createThemeLink: InputField(defaultInputField) {
 	heightMin: 34px;
 }
 
-windowFiltersWidth: 88px;
+windowFiltersWidth: 104px;
 windowFiltersButton: SideBarButton(defaultSideBarButton) {
 	textTop: 48px;
 	textSkip: 7px;

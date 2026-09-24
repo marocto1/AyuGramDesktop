@@ -478,7 +478,7 @@ void PaintRow(
 		? st::dialogsBgActive
 		: context.selected
 		? st::dialogsBgOver
-		: context.currentBg;
+		: st::filterInputInactiveBg;
 	auto swipeTranslation = 0;
 	if (history
 		&& context.quickActionContext
@@ -494,12 +494,19 @@ void PaintRow(
 		p.translate(-swipeTranslation, 0);
 	}
 	p.fillRect(geometry, context.currentBg);
-	if (context.active || context.selected) {
+	{
 		auto hq = PainterHighQualityEnabler(p);
 		p.setPen(Qt::NoPen);
 		p.setBrush(bg);
-		const auto card = geometry.adjusted(8, 4, -8, -4);
-		p.drawRoundedRect(card, 14, 14);
+		const auto card = geometry.adjusted(
+			st::dialogsCardInset,
+			st::dialogsCardGap,
+			-st::dialogsCardInset,
+			-st::dialogsCardGap);
+		p.drawRoundedRect(
+			card,
+			st::dialogsCardRadius,
+			st::dialogsCardRadius);
 	}
 	if (!(flags & Flag::TopicJumpRipple)) {
 		auto ripple = context.active
